@@ -1569,6 +1569,47 @@
         }
       }
     },
+    "AlertTypeCount": {
+      "description": "Represents the count of alerts for a specific alert type.",
+      "type": "object",
+      "properties": {
+        "alertType": {
+          "description": "The type of alert.",
+          "enum": [
+            "unknown",
+            "dependency",
+            "secret",
+            "code"
+          ],
+          "x-ms-enum": {
+            "name": "AlertType",
+            "values": [
+              {
+                "value": "unknown",
+                "description": "The code has an unspecified vulnerability type"
+              },
+              {
+                "value": "dependency",
+                "description": "The code uses a dependency with a known vulnerability."
+              },
+              {
+                "value": "secret",
+                "description": "The code contains a secret that has now been compromised and must be revoked."
+              },
+              {
+                "value": "code",
+                "description": "The code contains a weakness determined by static analysis."
+              }
+            ]
+          }
+        },
+        "count": {
+          "description": "The number of alerts of this type. Null when scanning is not configured for this alert type.",
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
     "AlertValidityInfo": {
       "description": "Validity data for an alert that will be part of Alerts APIs and UI.",
       "type": "object",
@@ -2680,7 +2721,8 @@
             "queued",
             "completed",
             "failed",
-            "requeued"
+            "requeued",
+            "concurrentProcessing"
           ],
           "x-ms-enum": {
             "name": "SarifJobStatus",
@@ -2704,6 +2746,10 @@
               {
                 "value": "requeued",
                 "description": "The job type when it is queued on exception"
+              },
+              {
+                "value": "concurrentProcessing",
+                "description": "The job is currently being processed in the concurrent processing workflow exclusive for no autofix flows"
               }
             ]
           }

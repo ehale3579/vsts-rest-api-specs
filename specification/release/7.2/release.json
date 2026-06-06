@@ -1716,7 +1716,7 @@
           {
             "in": "query",
             "name": "definitionEnvironmentId",
-            "description": "",
+            "description": "Id of the definition environment. Required when using environmentStatusFilter.",
             "required": false,
             "type": "integer",
             "format": "int32"
@@ -1772,7 +1772,7 @@
           {
             "in": "query",
             "name": "environmentStatusFilter",
-            "description": "",
+            "description": "Filters releases by environment status. Must be used with definitionEnvironmentId. Values: Undefined (0), NotStarted (1), InProgress (2), Succeeded (4), Canceled (8), Rejected (16), Queued (32), Scheduled (64), PartiallySucceeded (128). These are [Flags] values and can be combined (e.g. 4|16 = 20 for Succeeded or Rejected). Cannot be used with sourceBranchFilter.",
             "required": false,
             "type": "integer",
             "format": "int32"

@@ -11163,6 +11163,179 @@
         }
       }
     },
+    "CreateMigrationRequest": {
+      "description": "Request to create an Enterprise Live Migration.",
+      "type": "object",
+      "properties": {
+        "agentPoolName": {
+          "description": "Optional name of the agent pool to run the migration pipeline. When not specified, the pool is determined by region.",
+          "type": "string"
+        },
+        "configOptions": {
+          "description": "Optional configuration options for the migration. See ElmConfigOptions.",
+          "$ref": "#/definitions/ElmConfigOptions"
+        },
+        "gitHubUserToken": {
+          "description": "GitHub token (Device Flow or PAT with read:org scope) proving the identity of the migration owner.",
+          "type": "string"
+        },
+        "pipelineServiceConnectionId": {
+          "description": "Optional. The ID of a GitHub Enterprise service connection to use for pipeline rewiring. May be supplied at create time or attached later via PUT /pipelines. When EnableAutoDiscoverPipelines is opted in but no connection is attached, auto-discovery and clone-definition creation no-op during sync, and cutover is blocked by the cutover-readiness check until a connection is attached.",
+          "type": "string",
+          "format": "uuid"
+        },
+        "scheduledCutoverDate": {
+          "description": "The UTC date/time representing when the cutover is to occur.",
+          "type": "string",
+          "format": "date-time"
+        },
+        "serviceEndpointId": {
+          "description": "Optional. ID of a GitHub Enterprise Server-typed service connection whose PAT has ELM API access on the target GHES instance.",
+          "type": "string",
+          "format": "uuid"
+        },
+        "skipValidation": {
+          "description": "Optional. The set of pre-migration validation policies to skip.",
+          "enum": [
+            "none",
+            "activePullRequestCount",
+            "pullRequestDeltaSize",
+            "agentPoolExists",
+            "maxFileSize",
+            "maxPullRequestSize",
+            "maxPushPackSize",
+            "maxReferenceNameLength",
+            "targetRepositoryDoesNotExist",
+            "sourceRepositoryContainsLfsObjects",
+            "sourceRepositoryNotReadOnly",
+            "boardsGitHubConnectionProvisioning",
+            "all"
+          ],
+          "x-ms-enum": {
+            "name": "SkipValidationPolicy",
+            "values": [
+              {
+                "value": "none",
+                "description": "Do not skip any validation policies."
+              },
+              {
+                "value": "activePullRequestCount",
+                "description": "Skip the active pull request count policy."
+              },
+              {
+                "value": "pullRequestDeltaSize",
+                "description": "Skip the pull request delta size policy."
+              },
+              {
+                "value": "agentPoolExists",
+                "description": "Skip the agent pool exists policy."
+              },
+              {
+                "value": "maxFileSize",
+                "description": "Skip the max file size policy."
+              },
+              {
+                "value": "maxPullRequestSize",
+                "description": "Skip the max pull request size policy."
+              },
+              {
+                "value": "maxPushPackSize",
+                "description": "Skip the max push pack size policy."
+              },
+              {
+                "value": "maxReferenceNameLength",
+                "description": "Skip the max reference name length policy."
+              },
+              {
+                "value": "targetRepositoryDoesNotExist",
+                "description": "Skip the target repository does not exist policy."
+              },
+              {
+                "value": "sourceRepositoryContainsLfsObjects",
+                "description": "Skip the source repository contains LFS objects policy."
+              },
+              {
+                "value": "sourceRepositoryNotReadOnly",
+                "description": "Skip the source repository read-only (maintenance) check policy."
+              },
+              {
+                "value": "boardsGitHubConnectionProvisioning",
+                "description": "Skip provisioning of Boards GitHub connection."
+              },
+              {
+                "value": "all",
+                "description": "Skip all validation policies."
+              }
+            ]
+          }
+        },
+        "targetOwnerUserId": {
+          "description": "The GitHub login of the migration owner. Set by the server when GitHubUserToken is provided.",
+          "type": "string"
+        },
+        "targetRepository": {
+          "description": "URL identifying the destination respository of migration.",
+          "type": "string"
+        },
+        "validateOnly": {
+          "description": "True if the migration should only perform pre-migration validation.",
+          "type": "boolean"
+        }
+      }
+    },
+    "CutoverReviewItem": {
+      "description": "A failed or blocked resource from the GitHub migration, mapped back to ADO context.",
+      "type": "object",
+      "properties": {
+        "error": {
+          "description": "The error message from GitHub for this failed resource, if any.",
+          "type": "string"
+        },
+        "pullRequestUrl": {
+          "description": "The full URL to the ADO pull request.",
+          "type": "string"
+        },
+        "state": {
+          "description": "The node state: failed, blocked, or pending.",
+          "type": "string"
+        },
+        "type": {
+          "description": "The resource type (e.g. pull_request, pull_request_comment).",
+          "type": "string"
+        }
+      }
+    },
+    "CutoverReviewResponse": {
+      "description": "Response from the GetCutoverReview API containing failed and blocked resource details.",
+      "type": "object",
+      "properties": {
+        "blockedCount": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "failedCount": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "pendingCount": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "requiresPipelineVerificationAcknowledgment": {
+          "type": "boolean"
+        },
+        "totalUnprocessedCount": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "unprocessedItems": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/CutoverReviewItem"
+          }
+        }
+      }
+    },
     "DiscussionsUpdatedEvent": {
       "description": "Real time event (SignalR) for a discussions update on a pull request",
       "type": "object",
@@ -11172,6 +11345,69 @@
         }
       ],
       "properties": {}
+    },
+    "ElmConfigOptions": {
+      "description": "Strongly-typed configuration options for an Enterprise Live Migration. Sent on <c>CreateMigrationRequest.ConfigOptions</c> and echoed back on <c>Migration.ConfigOptions</c>. All members are optional so the contract can grow additively.",
+      "type": "object",
+      "properties": {
+        "enableAutoDiscoverPipelines": {
+          "description": "Enable auto-discovery of pipelines for the repository. When unset (default), pipelines must be submitted manually via the POST /pipelines API.",
+          "type": "boolean"
+        },
+        "enableBoardsGitHubConnection": {
+          "description": "Opt in to automatic Azure Boards GitHub connection provisioning on cutover. Disabled by default.",
+          "type": "boolean"
+        },
+        "skipBranchPolicyMigration": {
+          "description": "When <c>true</c>, branch policies will not be migrated to GitHub rulesets during cutover.",
+          "type": "boolean"
+        },
+        "skipSourceRepoLockdown": {
+          "description": "When <c>true</c>, the source ADO repository will not be set to read-only (maintenance mode) during cutover.",
+          "type": "boolean"
+        },
+        "skipValidation": {
+          "description": "Pre-migration validation policies to skip. Only honored when the <c>Git.EnterpriseLiveMigration.EnableConfigOptionsSkipValidation</c> feature flag is on; when honored, overwrites the legacy top-level <c>CreateMigrationRequest.SkipValidation</c> bitmask.",
+          "$ref": "#/definitions/ElmSkipValidationOptions"
+        }
+      }
+    },
+    "ElmSkipValidationOptions": {
+      "description": "Named-boolean form of <c>SkipValidationPolicy</c>. Setting a property to <c>true</c> tells the server to skip that pre-migration validation.",
+      "type": "object",
+      "properties": {
+        "activePullRequestCount": {
+          "type": "boolean"
+        },
+        "agentPoolExists": {
+          "type": "boolean"
+        },
+        "all": {
+          "description": "When <c>true</c>, all validation policies are skipped. Equivalent to setting every other property to <c>true</c>. Never echoed back on responses — only the individual policy properties are populated.",
+          "type": "boolean"
+        },
+        "maxFileSize": {
+          "type": "boolean"
+        },
+        "maxPullRequestSize": {
+          "type": "boolean"
+        },
+        "maxPushPackSize": {
+          "type": "boolean"
+        },
+        "maxReferenceNameLength": {
+          "type": "boolean"
+        },
+        "pullRequestDeltaSize": {
+          "type": "boolean"
+        },
+        "sourceRepositoryContainsLfsObjects": {
+          "type": "boolean"
+        },
+        "targetRepositoryDoesNotExist": {
+          "type": "boolean"
+        }
+      }
     },
     "FileContentMetadata": {
       "description": "",
@@ -16070,6 +16306,448 @@
       ],
       "properties": {}
     },
+    "Migration": {
+      "description": "An Enterprise Live Migration",
+      "type": "object",
+      "properties": {
+        "agentPoolName": {
+          "description": "The name of the agent pool used to run the migration pipeline.",
+          "type": "string"
+        },
+        "changedBy": {
+          "description": "The identity that last changed this migration.",
+          "$ref": "#/definitions/IdentityRef"
+        },
+        "changedDate": {
+          "description": "The UTC date/time this migration was last changed.",
+          "type": "string",
+          "format": "date-time"
+        },
+        "codeSyncDate": {
+          "description": "The UTC date/time of the last successful code synchronization pass.",
+          "type": "string",
+          "format": "date-time"
+        },
+        "configOptions": {
+          "description": "Configuration options for the migration.",
+          "$ref": "#/definitions/ElmConfigOptions"
+        },
+        "createdBy": {
+          "description": "The identity that created this migration.",
+          "$ref": "#/definitions/IdentityRef"
+        },
+        "createdDate": {
+          "description": "The UTC date/time this migration was created.",
+          "type": "string",
+          "format": "date-time"
+        },
+        "errorMessage": {
+          "description": "The error that caused this migration to fail.",
+          "type": "string"
+        },
+        "pullRequestSyncDate": {
+          "description": "The UTC date/time of the last successful pull request synchronization pass.",
+          "type": "string",
+          "format": "date-time"
+        },
+        "repositoryId": {
+          "description": "RepositoryId",
+          "type": "string",
+          "format": "uuid"
+        },
+        "scheduledCutoverDate": {
+          "description": "The UTC date/time representing when the cutover is to occur.",
+          "type": "string",
+          "format": "date-time"
+        },
+        "serviceEndpointId": {
+          "description": "The ID of the GitHub Enterprise Server service connection that holds the PAT used to authenticate against the target GitHub Enterprise Server.",
+          "type": "string",
+          "format": "uuid"
+        },
+        "skipValidation": {
+          "description": "The pre-migration validation policies that are being skipped.",
+          "enum": [
+            "none",
+            "activePullRequestCount",
+            "pullRequestDeltaSize",
+            "agentPoolExists",
+            "maxFileSize",
+            "maxPullRequestSize",
+            "maxPushPackSize",
+            "maxReferenceNameLength",
+            "targetRepositoryDoesNotExist",
+            "sourceRepositoryContainsLfsObjects",
+            "sourceRepositoryNotReadOnly",
+            "boardsGitHubConnectionProvisioning",
+            "all"
+          ],
+          "x-ms-enum": {
+            "name": "SkipValidationPolicy",
+            "values": [
+              {
+                "value": "none",
+                "description": "Do not skip any validation policies."
+              },
+              {
+                "value": "activePullRequestCount",
+                "description": "Skip the active pull request count policy."
+              },
+              {
+                "value": "pullRequestDeltaSize",
+                "description": "Skip the pull request delta size policy."
+              },
+              {
+                "value": "agentPoolExists",
+                "description": "Skip the agent pool exists policy."
+              },
+              {
+                "value": "maxFileSize",
+                "description": "Skip the max file size policy."
+              },
+              {
+                "value": "maxPullRequestSize",
+                "description": "Skip the max pull request size policy."
+              },
+              {
+                "value": "maxPushPackSize",
+                "description": "Skip the max push pack size policy."
+              },
+              {
+                "value": "maxReferenceNameLength",
+                "description": "Skip the max reference name length policy."
+              },
+              {
+                "value": "targetRepositoryDoesNotExist",
+                "description": "Skip the target repository does not exist policy."
+              },
+              {
+                "value": "sourceRepositoryContainsLfsObjects",
+                "description": "Skip the source repository contains LFS objects policy."
+              },
+              {
+                "value": "sourceRepositoryNotReadOnly",
+                "description": "Skip the source repository read-only (maintenance) check policy."
+              },
+              {
+                "value": "boardsGitHubConnectionProvisioning",
+                "description": "Skip provisioning of Boards GitHub connection."
+              },
+              {
+                "value": "all",
+                "description": "Skip all validation policies."
+              }
+            ]
+          }
+        },
+        "stage": {
+          "description": "The current stage of the migration (Queued, Validation, Synchronization, Cutover, Migrated).",
+          "enum": [
+            "queued",
+            "validation",
+            "synchronization",
+            "cutover",
+            "migrated",
+            "readyForCutover",
+            "degraded",
+            "reviewForCutover"
+          ],
+          "x-ms-enum": {
+            "name": "MigrationStage",
+            "values": [
+              {
+                "value": "queued",
+                "description": "The migration has been created but pre-check validation has not started yet."
+              },
+              {
+                "value": "validation",
+                "description": "Pre-check validation is in progress."
+              },
+              {
+                "value": "synchronization",
+                "description": "Code and PR synchronization is in progress."
+              },
+              {
+                "value": "cutover",
+                "description": "The migration is in the cutover phase."
+              },
+              {
+                "value": "migrated",
+                "description": "The migration has been fully migrated."
+              },
+              {
+                "value": "readyForCutover",
+                "description": "Initial backfill is complete. Delta synchronization continues until cutover is scheduled."
+              },
+              {
+                "value": "degraded",
+                "description": "GitHub migration provisioning failed; the migration will retry synchronization on the next job run without re-running validation."
+              },
+              {
+                "value": "reviewForCutover",
+                "description": "Cutover is blocked because failed or blocked resources were detected. The user must review failures and approve before cutover can proceed."
+              }
+            ]
+          }
+        },
+        "status": {
+          "description": "If the migration is 'active', 'complete', or 'failed'.",
+          "enum": [
+            "active",
+            "completed",
+            "failed",
+            "paused"
+          ],
+          "x-ms-enum": {
+            "name": "MigrationStatus",
+            "values": [
+              {
+                "value": "active",
+                "description": "The migration is active."
+              },
+              {
+                "value": "completed",
+                "description": "The migration has completed successfully."
+              },
+              {
+                "value": "failed",
+                "description": "The migration has completed with a failure. The error details can be found in the Migration.Error property."
+              },
+              {
+                "value": "paused",
+                "description": "The migration was paused."
+              }
+            ]
+          }
+        },
+        "targetOwnerUserId": {
+          "description": "The ID of the user that will end up owning the migrated repository.",
+          "type": "string"
+        },
+        "targetRepository": {
+          "description": "URL identifying the destination respository of migration.",
+          "type": "string"
+        },
+        "validateOnly": {
+          "description": "True if the migration should only perform pre-migration validation.",
+          "type": "boolean"
+        },
+        "validationIssues": {
+          "description": "A list of any issues found during pre-migration checks.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "PipelineClassificationFinding": {
+      "description": "A classification finding for a pipeline. Each finding represents a characteristic that makes the pipeline complex (e.g., cross-repo references, multi-checkout). A pipeline with zero findings is Simple.",
+      "type": "object",
+      "properties": {
+        "affectedRepositories": {
+          "description": "External repositories involved in the finding, if any.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "description": {
+          "description": "User-facing description of the issue.",
+          "type": "string"
+        },
+        "ruleName": {
+          "description": "Short stable identifier for the rule that produced this finding.",
+          "type": "string"
+        }
+      }
+    },
+    "PipelineRewireEntry": {
+      "description": "Represents the rewiring state of a single pipeline within a migration.",
+      "type": "object",
+      "properties": {
+        "acknowledged": {
+          "description": "True if the user has acknowledged this pipeline (e.g., confirmed a complex pipeline has been manually fixed). Acknowledged pipelines do not block cutover.",
+          "type": "boolean"
+        },
+        "classification": {
+          "description": "The classification of the pipeline.",
+          "enum": [
+            "unknown",
+            "simple",
+            "sameRepoTemplates",
+            "crossRepoTemplates",
+            "multiRepoCheckout",
+            "separatePipelineRepo",
+            "crossProject"
+          ],
+          "x-ms-enum": {
+            "name": "PipelineClassification",
+            "values": [
+              {
+                "value": "unknown",
+                "description": "Classification has not been determined yet."
+              },
+              {
+                "value": "simple",
+                "description": "Pipeline is in the same project, uses only self repo, no cross-repo templates."
+              },
+              {
+                "value": "sameRepoTemplates",
+                "description": "Pipeline uses extends/template from the same repo (resolves via self)."
+              },
+              {
+                "value": "crossRepoTemplates",
+                "description": "Pipeline references templates from another repo via resources.repositories."
+              },
+              {
+                "value": "multiRepoCheckout",
+                "description": "Pipeline checks out multiple repos including the migrated one."
+              },
+              {
+                "value": "separatePipelineRepo",
+                "description": "Pipeline YAML lives in a different repo; the migrated repo is referenced in resources."
+              },
+              {
+                "value": "crossProject",
+                "description": "Pipeline is in a different AzDO project than the migrated repo."
+              }
+            ]
+          }
+        },
+        "cloneDefinitionId": {
+          "description": "The build definition ID of the clone pipeline, if one has been created.",
+          "type": "integer",
+          "format": "int32"
+        },
+        "cloneYamlFile": {
+          "description": "The YAML filename of the clone on the elm/migrations branch (for complex cases only).",
+          "type": "string"
+        },
+        "definitionId": {
+          "description": "The build definition ID of the pipeline.",
+          "type": "integer",
+          "format": "int32"
+        },
+        "errorMessage": {
+          "description": "Error message if the pipeline rewiring failed.",
+          "type": "string"
+        },
+        "findings": {
+          "description": "Classification findings that describe why this pipeline is complex. Empty for Simple pipelines.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/PipelineClassificationFinding"
+          }
+        },
+        "name": {
+          "description": "The name of the pipeline definition.",
+          "type": "string"
+        },
+        "path": {
+          "description": "The folder path of the pipeline definition.",
+          "type": "string"
+        },
+        "projectId": {
+          "description": "The project ID containing this pipeline.",
+          "type": "string",
+          "format": "uuid"
+        },
+        "projectName": {
+          "description": "The project name containing this pipeline.",
+          "type": "string"
+        },
+        "requiredMappings": {
+          "description": "List of repositories referenced by this pipeline that need mappings. Populated when Status is \"needsMappings\".",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/RepositoryReference"
+          }
+        },
+        "status": {
+          "description": "The current rewiring status.",
+          "enum": [
+            "pending",
+            "classifying",
+            "preCheckPassed",
+            "preCheckFailed",
+            "needsMappings",
+            "cloneCreated",
+            "rewired",
+            "swapComplete",
+            "failed",
+            "awaitingCodeSync"
+          ],
+          "x-ms-enum": {
+            "name": "PipelineRewireStatus",
+            "values": [
+              {
+                "value": "pending",
+                "description": "Pipeline has been submitted but classification has not started."
+              },
+              {
+                "value": "classifying",
+                "description": "Pipeline is being classified."
+              },
+              {
+                "value": "preCheckPassed",
+                "description": "Pre-checks passed. Ready for rewiring."
+              },
+              {
+                "value": "preCheckFailed",
+                "description": "Pre-checks failed."
+              },
+              {
+                "value": "needsMappings",
+                "description": "Pipeline has cross-repo references that require repository mappings from the user."
+              },
+              {
+                "value": "cloneCreated",
+                "description": "A clone definition has been created for testing."
+              },
+              {
+                "value": "rewired",
+                "description": "Rewiring is complete — clone created and ready or original swapped at cutover."
+              },
+              {
+                "value": "swapComplete",
+                "description": "The original pipeline has been swapped to point at GitHub. Cutover complete."
+              },
+              {
+                "value": "failed",
+                "description": "Rewiring failed."
+              },
+              {
+                "value": "awaitingCodeSync",
+                "description": "Clone YAML has been written to the AzDO source repo's <c>elm/migrations</c> branch and is waiting for ELM code sync to mirror it to GitHub before the clone BuildDefinition can be created. Each sync cycle re-checks GitHub for the snapshotted commit; once visible the entry advances to CloneCreated."
+              }
+            ]
+          }
+        },
+        "yamlFilename": {
+          "description": "The YAML filename used by the pipeline definition.",
+          "type": "string"
+        }
+      }
+    },
+    "PipelineRewireResponse": {
+      "description": "Response containing the pipeline rewiring configuration and status for a migration.",
+      "type": "object",
+      "properties": {
+        "pipelines": {
+          "description": "The list of pipelines and their rewiring status.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/PipelineRewireEntry"
+          }
+        },
+        "serviceConnectionId": {
+          "description": "The GitHub Enterprise service connection ID used for pipeline clones.",
+          "type": "string",
+          "format": "uuid"
+        }
+      }
+    },
     "PolicyConfiguration": {
       "description": "The full policy configuration with settings.",
       "type": "object",
@@ -16243,6 +16921,40 @@
         }
       }
     },
+    "RepositoryMapping": {
+      "description": "Maps an AzDO repository to its GitHub counterpart for cross-repo pipeline rewiring. Used when a pipeline references templates or resources from another AzDO repo that has been (or will be) migrated to GitHub.",
+      "type": "object",
+      "properties": {
+        "sourceRepositoryId": {
+          "description": "The AzDO repository GUID of the source repository.",
+          "type": "string",
+          "format": "uuid"
+        },
+        "targetRepository": {
+          "description": "The GitHub target repository in \"owner/repo\" format.",
+          "type": "string"
+        }
+      }
+    },
+    "RepositoryReference": {
+      "description": "Describes a repository referenced by a pipeline that may need a mapping for cross-repo rewiring. Surfaced in RequiredMappings when the pipeline status is NeedsMappings.",
+      "type": "object",
+      "properties": {
+        "repositoryId": {
+          "description": "The AzDO repository GUID, if resolvable.",
+          "type": "string",
+          "format": "uuid"
+        },
+        "repositoryName": {
+          "description": "The repository name as referenced in the YAML (e.g. \"MyProject/TemplatesRepo\").",
+          "type": "string"
+        },
+        "repositoryType": {
+          "description": "The repository type as declared in the YAML (e.g. \"git\", \"github\").",
+          "type": "string"
+        }
+      }
+    },
     "ResourceRef": {
       "description": "",
       "type": "object",
@@ -16355,6 +17067,32 @@
         }
       ],
       "properties": {}
+    },
+    "SubmitPipelinesRequest": {
+      "description": "Request to submit pipelines for rewiring as part of an Enterprise Live Migration.",
+      "type": "object",
+      "properties": {
+        "pipelineIds": {
+          "description": "The build definition IDs of the pipelines to rewire.",
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "repositoryMappings": {
+          "description": "Optional mappings for cross-repo references. When a pipeline's YAML references another AzDO repository (via resources.repositories), this mapping tells us which GitHub repository it corresponds to. Not required for simple pipelines.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/RepositoryMapping"
+          }
+        },
+        "serviceConnectionId": {
+          "description": "The ID of the GitHub service connection to use for the rewired pipelines. This must be a project-scoped service connection with access to the target GitHub org. This is separate from the migration-level ServiceEndpointId.",
+          "type": "string",
+          "format": "uuid"
+        }
+      }
     },
     "SupportedIde": {
       "description": "Represents a Supported IDE entity.",
@@ -17492,6 +18230,110 @@
         }
       ],
       "properties": {}
+    },
+    "UpdateMigrationRequest": {
+      "description": "Request to update an Enterprise Live Migration.",
+      "type": "object",
+      "properties": {
+        "cutoverFailureAcceptedCount": {
+          "description": "The number of failed and blocked resources the user has reviewed and accepted. Required when approving cutover for a migration in the ReviewForCutover stage. Must match the current total failure count; rejected if the count has changed. Set to int.MaxValue to accept all failures (requires AllowBlanketCutoverApproval feature flag).",
+          "type": "integer",
+          "format": "int32"
+        },
+        "pipelinesVerified": {
+          "description": "Set to true to acknowledge that all rewired pipelines have been verified. Required for cutover when RequiresPipelineVerificationAcknowledgment is true. Independent of CutoverFailureAcceptedCount.",
+          "type": "boolean"
+        },
+        "scheduledCutoverDate": {
+          "description": "The UTC date/time representing when the cutover is to occur.",
+          "type": "string",
+          "format": "date-time"
+        },
+        "statusRequested": {
+          "description": "The status requested for the migration. Allowed values are \"Active\" and \"Paused\".",
+          "enum": [
+            "active",
+            "completed",
+            "failed",
+            "paused"
+          ],
+          "x-ms-enum": {
+            "name": "MigrationStatus",
+            "values": [
+              {
+                "value": "active",
+                "description": "The migration is active."
+              },
+              {
+                "value": "completed",
+                "description": "The migration has completed successfully."
+              },
+              {
+                "value": "failed",
+                "description": "The migration has completed with a failure. The error details can be found in the Migration.Error property."
+              },
+              {
+                "value": "paused",
+                "description": "The migration was paused."
+              }
+            ]
+          }
+        },
+        "validateOnly": {
+          "description": "True if the migration should only perform pre-migration validation.",
+          "type": "boolean"
+        }
+      }
+    },
+    "UpdatePipelinesRequest": {
+      "description": "Request to update the pipeline rewiring configuration for a migration. All fields are optional — only provided fields are applied.",
+      "type": "object",
+      "properties": {
+        "acknowledgePipelineIds": {
+          "description": "Pipeline definition IDs to acknowledge. Acknowledged pipelines (including complex or failed ones) do not block cutover.",
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "addPipelineIds": {
+          "description": "Pipeline definition IDs to add to the rewiring selection.",
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "removePipelineIds": {
+          "description": "Pipeline definition IDs to remove from the rewiring selection. If a clone exists for a removed pipeline, it will be deleted.",
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "repositoryMappings": {
+          "description": "Repository mappings to add or update. Merged by SourceRepositoryId — if a mapping for the same source repo already exists, it is replaced.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/RepositoryMapping"
+          }
+        },
+        "retryFailedPipelineIds": {
+          "description": "Pipeline definition IDs to retry. Matching entries in Failed status are reset so the next sync cycle retries them. One-shot: the reset happens immediately and the IDs are not persisted.",
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "serviceConnectionId": {
+          "description": "Updated GitHub service connection ID.",
+          "type": "string",
+          "format": "uuid"
+        }
+      }
     },
     "UpdateRefsRequest": {
       "description": "",

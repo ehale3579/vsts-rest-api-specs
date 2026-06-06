@@ -76,7 +76,8 @@
       "description": "This controller version exists to support returning identity values and project scoped urls for work items"
     },
     {
-      "name": "Send Mail"
+      "name": "Send Mail",
+      "description": "This API is intended for use in work item notification scenarios. Payloads must not contain URLs, scripts, or any other potentially harmful content."
     },
     {
       "name": "Tags",

@@ -10950,6 +10950,10 @@
           "description": "Enforce no access to secrets for builds of forked repositories.",
           "type": "boolean"
         },
+        "enforceReferencedGitHubRepoScopedToken": {
+          "description": "Restricts the scope of GitHub access for all pipelines to only GitHub repositories explicitly referenced by the pipeline.",
+          "type": "boolean"
+        },
         "enforceReferencedRepoScopedToken": {
           "description": "Restricts the scope of access for all pipelines to only repositories explicitly referenced by the pipeline.",
           "type": "boolean"

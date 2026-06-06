@@ -151,20 +151,7 @@
             "dataSources": [
               {
                 "name": "TestConnection",
-                "endpointUrl": "{{{endpoint.url}}}2.0/repositories?role=member",
-                "requestVerb": null,
-                "requestContent": null,
-                "resourceUrl": "",
-                "resultSelector": "jsonpath:$.values[*]",
-                "callbackContextTemplate": null,
-                "callbackRequiredTemplate": null,
-                "initialContextTemplate": null,
-                "headers": [],
-                "authenticationScheme": null
-              },
-              {
-                "name": "Repositories",
-                "endpointUrl": "{{{endpoint.url}}}2.0/repositories?role=member&pagelen=500",
+                "endpointUrl": "{{{endpoint.url}}}2.0/workspaces",
                 "requestVerb": null,
                 "requestContent": null,
                 "resourceUrl": "",

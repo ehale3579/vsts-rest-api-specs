@@ -353,15 +353,7 @@
             "dataSources": [
               {
                 "name": "TestConnection",
-                "endpointUrl": "{{{endpoint.url}}}/2.0/repositories?role=member",
-                "resourceUrl": "",
-                "resultSelector": "jsonpath:$.values[*]",
-                "headers": [],
-                "authenticationScheme": null
-              },
-              {
-                "name": "Repositories",
-                "endpointUrl": "{{{endpoint.url}}}/2.0/repositories?role=member",
+                "endpointUrl": "{{{endpoint.url}}}/2.0/workspaces",
                 "resourceUrl": "",
                 "resultSelector": "jsonpath:$.values[*]",
                 "headers": [],
