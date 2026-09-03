@@ -711,6 +711,10 @@
         "dependencyScanningInjectionEnabled": {
           "description": "Dependency Scanning Injection enablement status set to False when disabled and True when enabled; Null is never explicitly set. <br /> If Advanced Security is NOT already enabled, behavior will depend on if Advanced Security is to be enabled/disabled. DependencyScanningInjectionEnabled will not affect anything in this scenario. <br /> If Advanced Security is to be disabled, the value of DependencyScanningInjectionEnabled will have no effect. <br /> Setting Dependency Scanning enablement state is only supported for repo enablement and not org or project enablement at this time.",
           "type": "boolean"
+        },
+        "malwareAlertsEnabled": {
+          "description": "Malware alerts enablement status set to False when disabled and True when enabled; Null is never explicitly set.",
+          "type": "boolean"
         }
       }
     },
@@ -718,6 +722,10 @@
       "description": "",
       "type": "object",
       "properties": {
+        "enableAutofixOnCreate": {
+          "description": "Automatically enable Copilot Autofix. If EnableOnCreate is not enabled this feature cannot be enabled.",
+          "type": "boolean"
+        },
         "enableBlockPushesOnCreate": {
           "description": "Automatically enable blocking of pushes that contain secrets. If EnableOnCreate is not enabled this feature cannot be enabled.",
           "type": "boolean"
@@ -732,6 +740,10 @@
         },
         "enableDependencyScanningInjectionOnCreate": {
           "description": "Automatically enable Dependency Scanning Injection. If EnableOnCreate is not enabled this feature cannot be enabled.",
+          "type": "boolean"
+        },
+        "enableMalwareAlertsOnCreate": {
+          "description": "Automatically enable malware alerts. If EnableOnCreate is not enabled this feature cannot be enabled.",
           "type": "boolean"
         },
         "enableOnCreate": {
@@ -755,6 +767,10 @@
         }
       ],
       "properties": {
+        "enableAutofixOnCreate": {
+          "description": "Automatically enable Copilot Autofix. If EnableOnCreate is not enabled this feature cannot be enabled.",
+          "type": "boolean"
+        },
         "enableBlockPushesOnCreate": {
           "description": "Automatically enable blocking of pushes that contain secrets. If EnableOnCreate is not enabled this feature cannot be enabled.",
           "type": "boolean"
@@ -769,6 +785,10 @@
         },
         "enableDependencyScanningInjectionOnCreate": {
           "description": "Automatically enable Dependency Scanning Injection. If EnableOnCreate is not enabled this feature cannot be enabled.",
+          "type": "boolean"
+        },
+        "enableMalwareAlertsOnCreate": {
+          "description": "Automatically enable malware alerts. If EnableOnCreate is not enabled this feature cannot be enabled.",
           "type": "boolean"
         },
         "enableOnCreate": {
@@ -989,7 +1009,7 @@
       "type": "object",
       "properties": {
         "autofixEnabled": {
-          "description": "Copilot Autofix enablement status set to False when disabled and True when enabled; Null is never explicitly set. Setting Autofix enablement state is only supported for repo enablement and not org or project enablement at this time.",
+          "description": "Copilot Autofix enablement status set to False when disabled and True when enabled; Null is never explicitly set.",
           "type": "boolean"
         },
         "codeQLEnabled": {
@@ -1013,6 +1033,10 @@
         "dependencyScanningInjectionEnabled": {
           "description": "Dependency Scanning Injection enablement status set to False when disabled and True when enabled; Null is never explicitly set. <br /> If Advanced Security is NOT already enabled, behavior will depend on if Advanced Security is to be enabled/disabled. DependencyScanningInjectionEnabled will not affect anything in this scenario. <br /> If Advanced Security is to be disabled, the value of DependencyScanningInjectionEnabled will have no effect.",
           "type": "boolean"
+        },
+        "malwareAlertsEnabled": {
+          "description": "Malware alerts enablement status set to False when disabled and True when enabled; Null is never explicitly set. <br />When true, alerts are generated for malware vulnerabilities that affect your dependencies.",
+          "type": "boolean"
         }
       }
     },
@@ -1020,6 +1044,10 @@
       "description": "",
       "type": "object",
       "properties": {
+        "enableAutofixOnCreate": {
+          "description": "Automatically enable Copilot Autofix when Code Security is auto-enabled. If EnableCodeSecurityOnCreate is not true this flag is ignored.",
+          "type": "boolean"
+        },
         "enableBlockPushesOnCreate": {
           "description": "Automatically enable blocking of pushes that contain secrets when Secret Protection is auto-enabled. If EnableSecretProtectionOnCreate is not true this flag is ignored.",
           "type": "boolean"
@@ -1038,6 +1066,10 @@
         },
         "enableDependencyScanningInjectionOnCreate": {
           "description": "Automatically enable Dependency Scanning Injection when Code Security is auto-enabled. If EnableCodeSecurityOnCreate is not true this flag is ignored.",
+          "type": "boolean"
+        },
+        "enableMalwareAlertsOnCreate": {
+          "description": "Automatically enable Malware alerts when Code Security is auto-enabled. If EnableCodeSecurityOnCreate is not true this flag is ignored.",
           "type": "boolean"
         },
         "enableSecretProtectionOnCreate": {

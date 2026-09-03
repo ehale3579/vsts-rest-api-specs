@@ -262,7 +262,7 @@
         "x-ms-vss-resource": "streams",
         "x-ms-vss-method": "CreateStream",
         "x-ms-preview": true,
-        "description": "Create new Audit Stream",
+        "description": "Create new Audit Stream\n\nAzure Monitor Logs streams use WorkspaceResourceId and a transient Token consumer input. Token must be the raw Azure Resource Manager access token value for https://management.azure.com/, without an HTTP authorization scheme, and is not stored.",
         "operationId": "Streams_Create",
         "consumes": [
           "application/json"
@@ -317,6 +317,9 @@
         "x-ms-examples": {
           "Create a stream": {
             "$ref": "./httpExamples/streams/POST__AuditLog_streams_create.json"
+          },
+          "Create an Azure Monitor Logs stream with Microsoft Entra authentication": {
+            "$ref": "./httpExamples/streams/POST__AuditLog_streams_create_azure_monitor_logs.json"
           }
         }
       },
@@ -377,7 +380,7 @@
         "x-ms-vss-resource": "streams",
         "x-ms-vss-method": "UpdateStream",
         "x-ms-preview": true,
-        "description": "Update existing Audit Stream",
+        "description": "Update existing Audit Stream\n\nAzure Monitor Logs updates require the raw Azure Resource Manager access token value, without an HTTP authorization scheme, in consumerInputs.Token when WorkspaceResourceId changes or workspace access is re-verified. Unchanged destinations do not require a new token.",
         "operationId": "Streams_Update Stream",
         "consumes": [
           "application/json"
@@ -424,6 +427,9 @@
         "x-ms-examples": {
           "Update a stream": {
             "$ref": "./httpExamples/streams/PUT__AuditLog_streams_update.json"
+          },
+          "Update an Azure Monitor Logs stream with Microsoft Entra authentication": {
+            "$ref": "./httpExamples/streams/PUT__AuditLog_streams_update_azure_monitor_logs.json"
           }
         }
       }

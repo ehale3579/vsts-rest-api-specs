@@ -449,7 +449,9 @@
               "unknown",
               "dependency",
               "secret",
-              "code"
+              "code",
+              "aiCode",
+              "malware"
             ],
             "x-ms-enum": {
               "name": "AlertType",
@@ -469,6 +471,14 @@
                 {
                   "value": "code",
                   "description": "The code contains a weakness determined by static analysis."
+                },
+                {
+                  "value": "aiCode",
+                  "description": "The code contains a weakness determined by AI-powered analysis."
+                },
+                {
+                  "value": "malware",
+                  "description": "The code uses a dependency flagged as malware by the GitHub Advisory Database."
                 }
               ]
             }
@@ -980,7 +990,9 @@
             "unknown",
             "dependency",
             "secret",
-            "code"
+            "code",
+            "aiCode",
+            "malware"
           ],
           "x-ms-enum": {
             "name": "AlertType",
@@ -1000,6 +1012,14 @@
               {
                 "value": "code",
                 "description": "The code contains a weakness determined by static analysis."
+              },
+              {
+                "value": "aiCode",
+                "description": "The code contains a weakness determined by AI-powered analysis."
+              },
+              {
+                "value": "malware",
+                "description": "The code uses a dependency flagged as malware by the GitHub Advisory Database."
               }
             ]
           }
@@ -1329,6 +1349,17 @@
         }
       }
     },
+    "CoverageSummaryMetric": {
+      "description": "Repository count for a Security Overview Coverage metric.",
+      "type": "object",
+      "properties": {
+        "repositoryCount": {
+          "description": "Number of repositories matching the metric.",
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
     "DashboardAlert": {
       "description": "An alert entity used in the dashboard for combined alerts.",
       "type": "object",
@@ -1344,7 +1375,9 @@
             "unknown",
             "dependency",
             "secret",
-            "code"
+            "code",
+            "aiCode",
+            "malware"
           ],
           "x-ms-enum": {
             "name": "AlertType",
@@ -1364,6 +1397,14 @@
               {
                 "value": "code",
                 "description": "The code contains a weakness determined by static analysis."
+              },
+              {
+                "value": "aiCode",
+                "description": "The code contains a weakness determined by AI-powered analysis."
+              },
+              {
+                "value": "malware",
+                "description": "The code uses a dependency flagged as malware by the GitHub Advisory Database."
               }
             ]
           }
@@ -1445,7 +1486,8 @@
             "active",
             "dismissed",
             "fixed",
-            "autoDismissed"
+            "autoDismissed",
+            "draft"
           ],
           "x-ms-enum": {
             "name": "State",
@@ -1469,12 +1511,16 @@
               {
                 "value": "autoDismissed",
                 "description": "The tool has determined that the issue is no longer a risk"
+              },
+              {
+                "value": "draft",
+                "description": "Alert is in a draft state and is only visible to identities in the Advanced Security draft-alert privileged identity list. Filtered out of all Get alert responses (results and counts) for non-privileged callers."
               }
             ]
           }
         },
         "title": {
-          "description": "Title will only be rendered as text and does not support markdown formatting. There is a maximum character limit of 256.",
+          "description": "Title will only be rendered as text and does not support markdown formatting. There is a maximum character limit of 512.",
           "type": "string"
         },
         "truncatedSecret": {
@@ -1598,7 +1644,9 @@
               "unknown",
               "dependency",
               "secret",
-              "code"
+              "code",
+              "aiCode",
+              "malware"
             ],
             "x-ms-enum": {
               "name": "AlertType",
@@ -1618,6 +1666,14 @@
                 {
                   "value": "code",
                   "description": "The code contains a weakness determined by static analysis."
+                },
+                {
+                  "value": "aiCode",
+                  "description": "The code contains a weakness determined by AI-powered analysis."
+                },
+                {
+                  "value": "malware",
+                  "description": "The code uses a dependency flagged as malware by the GitHub Advisory Database."
                 }
               ]
             }
@@ -1811,6 +1867,46 @@
           "items": {
             "$ref": "#/definitions/ProjectAlertSummary"
           }
+        },
+        "totals": {
+          "description": "Summary metrics for the authorized repository scope.",
+          "$ref": "#/definitions/OrgAlertSummaryTotals"
+        }
+      }
+    },
+    "OrgAlertSummaryTotals": {
+      "description": "Aggregate Risk values for an organization Security Overview response.",
+      "type": "object",
+      "properties": {
+        "dismissedAlerts": {
+          "description": "Alerts dismissed during the selected period.",
+          "type": "integer",
+          "format": "int64"
+        },
+        "fixedAlerts": {
+          "description": "Alerts fixed during the selected period.",
+          "type": "integer",
+          "format": "int64"
+        },
+        "matchingRepositoryCount": {
+          "description": "Distinct authorized repositories in the filtered response.",
+          "type": "integer",
+          "format": "int32"
+        },
+        "newAlerts": {
+          "description": "Alerts introduced during the selected period that remain open.",
+          "type": "integer",
+          "format": "int64"
+        },
+        "openAlerts": {
+          "description": "Current open alerts.",
+          "type": "integer",
+          "format": "int64"
+        },
+        "totalRepositoryCount": {
+          "description": "Distinct authorized Advanced Security-enabled repositories.",
+          "type": "integer",
+          "format": "int32"
         }
       }
     },
@@ -1829,6 +1925,42 @@
           "items": {
             "$ref": "#/definitions/ProjectEnablementSummary"
           }
+        },
+        "totals": {
+          "description": "Summary metrics for the authorized repository scope.",
+          "$ref": "#/definitions/OrgEnablementSummaryTotals"
+        }
+      }
+    },
+    "OrgEnablementSummaryTotals": {
+      "description": "Aggregate Coverage values for an organization Security Overview response.",
+      "type": "object",
+      "properties": {
+        "code": {
+          "description": "Repositories with code alerts enabled.",
+          "$ref": "#/definitions/CoverageSummaryMetric"
+        },
+        "dependencies": {
+          "description": "Repositories with dependency alerts enabled.",
+          "$ref": "#/definitions/CoverageSummaryMetric"
+        },
+        "matchingRepositoryCount": {
+          "description": "Distinct authorized repositories in the filtered response.",
+          "type": "integer",
+          "format": "int32"
+        },
+        "noTooling": {
+          "description": "Repositories with all Coverage settings disabled.",
+          "$ref": "#/definitions/CoverageSummaryMetric"
+        },
+        "secrets": {
+          "description": "Repositories with secret alerts enabled.",
+          "$ref": "#/definitions/CoverageSummaryMetric"
+        },
+        "totalRepositoryCount": {
+          "description": "Distinct authorized Advanced Security-enabled repositories.",
+          "type": "integer",
+          "format": "int32"
         }
       }
     },

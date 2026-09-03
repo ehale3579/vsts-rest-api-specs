@@ -25,6 +25,9 @@
       "name": "Alerts Batch"
     },
     {
+      "name": "Alerts Query"
+    },
+    {
       "name": "Analysis"
     },
     {
@@ -119,7 +122,9 @@
               "unknown",
               "dependency",
               "secret",
-              "code"
+              "code",
+              "aiCode",
+              "malware"
             ],
             "x-ms-enum": {
               "name": "AlertType",
@@ -139,6 +144,14 @@
                 {
                   "value": "code",
                   "description": "The code contains a weakness determined by static analysis."
+                },
+                {
+                  "value": "aiCode",
+                  "description": "The code contains a weakness determined by AI-powered analysis."
+                },
+                {
+                  "value": "malware",
+                  "description": "The code uses a dependency flagged as malware by the GitHub Advisory Database."
                 }
               ]
             }
@@ -163,6 +176,30 @@
           },
           {
             "in": "query",
+            "name": "criteria.dependencyScope",
+            "description": "If provided, only alerts for dependencies in this scope are returned. <br />Otherwise, return alerts regardless of scope. <br />Only applicable for dependency alerts.",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "runtime",
+              "development"
+            ],
+            "x-ms-enum": {
+              "name": "DependencyScope",
+              "values": [
+                {
+                  "value": "runtime",
+                  "description": ""
+                },
+                {
+                  "value": "development",
+                  "description": ""
+                }
+              ]
+            }
+          },
+          {
+            "in": "query",
             "name": "criteria.fromDate",
             "description": "If provided, only return alerts last seen after this date. <br />Otherwise return all alerts.",
             "required": false,
@@ -172,7 +209,7 @@
           {
             "in": "query",
             "name": "criteria.hasLinkedWorkItems",
-            "description": "If provided, filters alerts based on whether they have linked work items. <br />Set to \"true\" to return only alerts with linked work items. <br />Set to \"false\" to return only alerts without linked work items. <br />If not provided, returns all alerts regardless of linked work items. <br />Not applicable for secret and dependency scanning alerts.",
+            "description": "If provided, filters alerts based on whether they have linked work items. <br />Set to \"true\" to return only alerts with linked work items. <br />Set to \"false\" to return only alerts without linked work items. <br />If not provided, returns all alerts regardless of linked work items. <br />Not applicable for secret and dependency scanning alerts. <br />This property will be deprecated in the future; prefer filtering by metadata type instead.",
             "required": false,
             "type": "boolean"
           },
@@ -302,6 +339,16 @@
           },
           {
             "in": "query",
+            "name": "criteria.toolNames",
+            "description": "If provided, only return alerts detected by these tools. <br />Takes precedence over ToolName when populated. <br />Requires the EnableMultiToolSelection feature flag.",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
             "name": "criteria.validity",
             "description": "If provided, only return alerts with the validity specified here. If the validity status is Unknown, fetch alerts of all validity results. <br />Only applicable for secret alerts. <br />Filtering by validity status may cause less alerts to be returned than requested with TOP parameter. <br />Due to this behavior, the ContinuationToken(<![CDATA[<header name>]]>) in the response header should be relied on to decide if another batch needs to be fetched.",
             "required": false,
@@ -320,7 +367,8 @@
             "enum": [
               "none",
               "minimal",
-              "count"
+              "count",
+              "aiMetadataBlobReference"
             ],
             "x-ms-enum": {
               "name": "AlertListExpandOption",
@@ -336,6 +384,10 @@
                 {
                   "value": "count",
                   "description": "Return only the count of active alerts grouped by alert type."
+                },
+                {
+                  "value": "aiMetadataBlobReference",
+                  "description": "Return the AI metadata blob reference in AI code alerts."
                 }
               ]
             }
@@ -430,7 +482,8 @@
             "type": "string",
             "enum": [
               "none",
-              "validationFingerprint"
+              "validationFingerprint",
+              "aiMetadataBlobReference"
             ],
             "x-ms-enum": {
               "name": "ExpandOption",
@@ -442,6 +495,10 @@
                 {
                   "value": "validationFingerprint",
                   "description": "Return validationFingerprints in Alert."
+                },
+                {
+                  "value": "aiMetadataBlobReference",
+                  "description": "Return the AI metadata blob reference in Alert."
                 }
               ]
             }
@@ -803,6 +860,141 @@
             "type": "string"
           },
           {
+            "in": "query",
+            "name": "includeSensitiveInformation",
+            "description": "Applies to secret alerts only. When false (the default), the 'ValidationFingerprintJson' of each secret alert's validation fingerprints is omitted from the response. Set to true to include it; be aware that the validation fingerprint JSON may contain the unencrypted secret and other sensitive data, so exercise caution when requesting it.",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "$ref": "#/parameters/api-Version-preview.1"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Alert"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "oauth2": [
+              "vso.advsec"
+            ]
+          }
+        ]
+      }
+    },
+    "/{organization}/{project}/_apis/alert/repositories/{repository}/alertsquery": {
+      "post": {
+        "tags": [
+          "Alerts Query"
+        ],
+        "x-ms-docs-override-version": "7.2-preview.1",
+        "x-ms-vss-resource": "alertsQuery",
+        "x-ms-vss-method": "QueryAlertsAsync",
+        "x-ms-preview": true,
+        "description": "Query alerts for a repository by metadata type linkage.\n\nUse this endpoint to filter alerts by metadata type. For all other filtering options, use the\nGET alerts endpoint.",
+        "operationId": "Alerts Query_Query",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "organization",
+            "description": "The name of the Azure DevOps organization.",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "description": "Metadata type filters to limit the alerts returned",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/AlertMetadataQueryCriteria"
+            }
+          },
+          {
+            "in": "path",
+            "name": "project",
+            "description": "Project ID or project name",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "path",
+            "name": "repository",
+            "description": "The name or ID of the repository",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "top",
+            "description": "The maximum number of alerts to return",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "in": "query",
+            "name": "orderBy",
+            "description": "Must be \"id\" \"firstSeen\" \"lastSeen\" \"fixedOn\" or \"severity\"  Defaults to \"id\"",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "in": "query",
+            "name": "expand",
+            "description": "Options to expand the response, e.g. returning alert counts instead of alerts",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "none",
+              "minimal",
+              "count",
+              "aiMetadataBlobReference"
+            ],
+            "x-ms-enum": {
+              "name": "AlertListExpandOption",
+              "values": [
+                {
+                  "value": "none",
+                  "description": "No Expands."
+                },
+                {
+                  "value": "minimal",
+                  "description": "Return a minimal representation of an alert."
+                },
+                {
+                  "value": "count",
+                  "description": "Return only the count of active alerts grouped by alert type."
+                },
+                {
+                  "value": "aiMetadataBlobReference",
+                  "description": "Return the AI metadata blob reference in AI code alerts."
+                }
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "continuationToken",
+            "description": "If there are more alerts than can be returned, a continuation token is placed in the \"x-ms-continuationtoken\" header.  Use that token here to get the next page of alerts",
+            "required": false,
+            "type": "string"
+          },
+          {
             "$ref": "#/parameters/api-Version-preview.1"
           }
         ],
@@ -872,7 +1064,9 @@
               "unknown",
               "dependency",
               "secret",
-              "code"
+              "code",
+              "aiCode",
+              "malware"
             ],
             "x-ms-enum": {
               "name": "AlertType",
@@ -892,6 +1086,14 @@
                 {
                   "value": "code",
                   "description": "The code contains a weakness determined by static analysis."
+                },
+                {
+                  "value": "aiCode",
+                  "description": "The code contains a weakness determined by AI-powered analysis."
+                },
+                {
+                  "value": "malware",
+                  "description": "The code uses a dependency flagged as malware by the GitHub Advisory Database."
                 }
               ]
             }
@@ -1061,16 +1263,34 @@
     }
   },
   "definitions": {
+    "AIMetadataBlobReference": {
+      "description": "Reference to the AI metadata blob associated with an AI code alert. Allows a consumer to download the full metadata blob. No querying over the blob contents is supported.",
+      "type": "object",
+      "properties": {
+        "downloadUrl": {
+          "description": "URL to download the full AI metadata blob.",
+          "type": "string"
+        }
+      }
+    },
     "Alert": {
       "description": "",
       "type": "object",
       "properties": {
+        "additionalInformationMessage": {
+          "description": "Additional information message to display for this alert. For ASAN tools, contains crash details formatted in code blocks. For AI code scanning tools, contains markdown content from result.message.markdown.",
+          "type": "string"
+        },
         "additionalProperties": {
           "description": "Additional properties of this alert.",
           "type": "object",
           "additionalProperties": {
             "type": "object"
           }
+        },
+        "aiMetadataBlobReference": {
+          "description": "Reference to the AI metadata blob associated with the alert (AI code alerts only). Only returned on demand when the Expand parameter is set to AIMetadataBlobReference.",
+          "$ref": "#/definitions/AIMetadataBlobReference"
         },
         "alertId": {
           "description": "Identifier for the alert. It is unique within Azure DevOps organization.",
@@ -1083,7 +1303,9 @@
             "unknown",
             "dependency",
             "secret",
-            "code"
+            "code",
+            "aiCode",
+            "malware"
           ],
           "x-ms-enum": {
             "name": "AlertType",
@@ -1103,6 +1325,14 @@
               {
                 "value": "code",
                 "description": "The code contains a weakness determined by static analysis."
+              },
+              {
+                "value": "aiCode",
+                "description": "The code contains a weakness determined by AI-powered analysis."
+              },
+              {
+                "value": "malware",
+                "description": "The code uses a dependency flagged as malware by the GitHub Advisory Database."
               }
             ]
           }
@@ -1155,7 +1385,11 @@
           "format": "date-time"
         },
         "isAutoFixable": {
-          "description": "Value indicates whether the alert can be auto-fixed by Copilot Autofix. True when the alert is a code scanning alert detected by CodeQL with a supported rule. Null when the value has not been computed for this code path.",
+          "description": "Value indicates whether Copilot Autofix can currently be run on the alert. True when Copilot Autofix is available for the organization and enabled on the repository, the alert is a code scanning alert detected by CodeQL with a supported rule, and the alert's ref is eligible. Null when the value has not been computed for this code path.",
+          "type": "boolean"
+        },
+        "isDevDependency": {
+          "description": "Value indicates whether the alert was generated for a development dependency. True indicates development dependency, false indicates runtime dependency, and null indicates unknown or not applicable.",
           "type": "boolean"
         },
         "lastSeenDate": {
@@ -1254,7 +1488,8 @@
             "active",
             "dismissed",
             "fixed",
-            "autoDismissed"
+            "autoDismissed",
+            "draft"
           ],
           "x-ms-enum": {
             "name": "State",
@@ -1278,12 +1513,16 @@
               {
                 "value": "autoDismissed",
                 "description": "The tool has determined that the issue is no longer a risk"
+              },
+              {
+                "value": "draft",
+                "description": "Alert is in a draft state and is only visible to identities in the Advanced Security draft-alert privileged identity list. Filtered out of all Get alert responses (results and counts) for non-privileged callers."
               }
             ]
           }
         },
         "title": {
-          "description": "Title will only be rendered as text and does not support markdown formatting. There is a maximum character limit of 256.",
+          "description": "Title will only be rendered as text and does not support markdown formatting. There is a maximum character limit of 512.",
           "type": "string"
         },
         "tools": {
@@ -1341,7 +1580,8 @@
             "active",
             "dismissed",
             "fixed",
-            "autoDismissed"
+            "autoDismissed",
+            "draft"
           ],
           "x-ms-enum": {
             "name": "State",
@@ -1365,6 +1605,10 @@
               {
                 "value": "autoDismissed",
                 "description": "The tool has determined that the issue is no longer a risk"
+              },
+              {
+                "value": "draft",
+                "description": "Alert is in a draft state and is only visible to identities in the Advanced Security draft-alert privileged identity list. Filtered out of all Get alert responses (results and counts) for non-privileged callers."
               }
             ]
           }
@@ -1389,7 +1633,9 @@
             "unknown",
             "dependency",
             "secret",
-            "code"
+            "code",
+            "aiCode",
+            "malware"
           ],
           "x-ms-enum": {
             "name": "AlertType",
@@ -1409,9 +1655,191 @@
               {
                 "value": "code",
                 "description": "The code contains a weakness determined by static analysis."
+              },
+              {
+                "value": "aiCode",
+                "description": "The code contains a weakness determined by AI-powered analysis."
+              },
+              {
+                "value": "malware",
+                "description": "The code uses a dependency flagged as malware by the GitHub Advisory Database."
               }
             ]
           }
+        }
+      }
+    },
+    "AlertBatchStateUpdateRequest": {
+      "description": "Request model for batch-updating alert states.",
+      "type": "object",
+      "properties": {
+        "alertStateUpdateList": {
+          "description": "The list of individual alert state changes to apply. Max 100 items per request.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AlertStateUpdateForAlert"
+          }
+        },
+        "alertType": {
+          "description": "The alert type of the alerts being updated. Defaults to AICode if not specified.",
+          "enum": [
+            "unknown",
+            "dependency",
+            "secret",
+            "code",
+            "aiCode",
+            "malware"
+          ],
+          "x-ms-enum": {
+            "name": "AlertType",
+            "values": [
+              {
+                "value": "unknown",
+                "description": "The code has an unspecified vulnerability type"
+              },
+              {
+                "value": "dependency",
+                "description": "The code uses a dependency with a known vulnerability."
+              },
+              {
+                "value": "secret",
+                "description": "The code contains a secret that has now been compromised and must be revoked."
+              },
+              {
+                "value": "code",
+                "description": "The code contains a weakness determined by static analysis."
+              },
+              {
+                "value": "aiCode",
+                "description": "The code contains a weakness determined by AI-powered analysis."
+              },
+              {
+                "value": "malware",
+                "description": "The code uses a dependency flagged as malware by the GitHub Advisory Database."
+              }
+            ]
+          }
+        }
+      }
+    },
+    "AlertJob": {
+      "description": "Describes the last accepted snapshot of an external job.",
+      "type": "object",
+      "properties": {
+        "alertIds": {
+          "description": "Gets or sets the alerts associated with the job.",
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "artifacts": {
+          "description": "Gets or sets the artifacts produced by the job.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AlertJobArtifact"
+          }
+        },
+        "branchRef": {
+          "description": "Gets or sets the requested branch reference.",
+          "type": "string"
+        },
+        "createdBy": {
+          "description": "Gets or sets the identity that created the job.",
+          "type": "string",
+          "format": "uuid"
+        },
+        "createdDate": {
+          "description": "Gets or sets the date the job was created.",
+          "type": "string",
+          "format": "date-time"
+        },
+        "jobId": {
+          "description": "Gets or sets the provider-assigned job identifier.",
+          "type": "string"
+        },
+        "jobState": {
+          "description": "Gets or sets the provider-defined job state.",
+          "type": "string"
+        },
+        "jobType": {
+          "description": "Gets or sets the job type.",
+          "enum": [
+            "unknown",
+            "wimAutoPR",
+            "aiAlertConsolidation"
+          ],
+          "x-ms-enum": {
+            "name": "AlertJobType",
+            "values": [
+              {
+                "value": "unknown",
+                "description": "An alert job type not recognized by this client version."
+              },
+              {
+                "value": "wimAutoPR",
+                "description": "A WIM workflow that creates a pull request."
+              },
+              {
+                "value": "aiAlertConsolidation",
+                "description": "An AI alert consolidation workflow."
+              }
+            ]
+          }
+        },
+        "lastUpdatedBy": {
+          "description": "Gets or sets the identity that last updated the job.",
+          "type": "string",
+          "format": "uuid"
+        },
+        "lastUpdatedDate": {
+          "description": "Gets or sets the date the job was last updated.",
+          "type": "string",
+          "format": "date-time"
+        },
+        "properties": {
+          "description": "Gets or sets provider-specific properties.",
+          "$ref": "#/definitions/JObject"
+        },
+        "provider": {
+          "description": "Gets or sets the external job provider.",
+          "type": "string"
+        },
+        "revision": {
+          "description": "Gets or sets the storage revision used for optimistic concurrency.",
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
+    "AlertJobArtifact": {
+      "description": "Describes a canonical artifact produced by an external job.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "Gets or sets the artifact type.",
+          "enum": [
+            "unknown",
+            "pullRequest"
+          ],
+          "x-ms-enum": {
+            "name": "AlertJobArtifactType",
+            "values": [
+              {
+                "value": "unknown",
+                "description": "An artifact type not recognized by this client version."
+              },
+              {
+                "value": "pullRequest",
+                "description": "An Azure Repos pull request."
+              }
+            ]
+          }
+        },
+        "url": {
+          "description": "Gets or sets the externally addressable artifact URL.",
+          "type": "string"
         }
       }
     },
@@ -1482,6 +1910,19 @@
         }
       }
     },
+    "AlertMetadataQueryCriteria": {
+      "description": "Criteria for the POST alerts query endpoint. Only metadata type filtering is supported here; use GET alerts with SearchCriteria for other filters.",
+      "type": "object",
+      "properties": {
+        "metadataTypeFilters": {
+          "description": "Filters alerts by linkage to specific metadata types (e.g. \"pullRequest\", \"WorkItem\"). A value of \"true\" requires the alert to be linked to that metadata type, \"false\" requires it not be linked. All entries must be satisfied for an alert to be returned.",
+          "type": "object",
+          "additionalProperties": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
     "AlertStateUpdate": {
       "description": "",
       "type": "object",
@@ -1539,7 +1980,8 @@
             "active",
             "dismissed",
             "fixed",
-            "autoDismissed"
+            "autoDismissed",
+            "draft"
           ],
           "x-ms-enum": {
             "name": "State",
@@ -1563,50 +2005,113 @@
               {
                 "value": "autoDismissed",
                 "description": "The tool has determined that the issue is no longer a risk"
+              },
+              {
+                "value": "draft",
+                "description": "Alert is in a draft state and is only visible to identities in the Advanced Security draft-alert privileged identity list. Filtered out of all Get alert responses (results and counts) for non-privileged callers."
               }
             ]
           }
         }
       }
     },
-    "AlertTypeCount": {
-      "description": "Represents the count of alerts for a specific alert type.",
+    "AlertStateUpdateForAlert": {
+      "description": "Represents a state update for a single alert within a batch request.",
       "type": "object",
       "properties": {
-        "alertType": {
-          "description": "The type of alert.",
+        "alertId": {
+          "description": "The ID of the alert to update.",
+          "type": "integer",
+          "format": "int64"
+        },
+        "dismissedComment": {
+          "description": "Comment for dismissal (e.g., \"Dismissed by AI scan validation\").",
+          "type": "string"
+        },
+        "dismissedReason": {
+          "description": "Reason for dismissal. Required when State == Dismissed.",
           "enum": [
             "unknown",
-            "dependency",
-            "secret",
-            "code"
+            "fixed",
+            "acceptedRisk",
+            "falsePositive",
+            "agreedToGuidance",
+            "toolUpgrade",
+            "notDistributed"
           ],
           "x-ms-enum": {
-            "name": "AlertType",
+            "name": "DismissalType",
             "values": [
               {
                 "value": "unknown",
-                "description": "The code has an unspecified vulnerability type"
+                "description": "Dismissal type unknown"
               },
               {
-                "value": "dependency",
-                "description": "The code uses a dependency with a known vulnerability."
+                "value": "fixed",
+                "description": "Dismissal indicating alert has been fixed"
               },
               {
-                "value": "secret",
-                "description": "The code contains a secret that has now been compromised and must be revoked."
+                "value": "acceptedRisk",
+                "description": "Dismissal indicating user is accepting a risk for the alert"
               },
               {
-                "value": "code",
-                "description": "The code contains a weakness determined by static analysis."
+                "value": "falsePositive",
+                "description": "Dismissal indicating alert is a false positive and will likely not be fixed."
+              },
+              {
+                "value": "agreedToGuidance",
+                "description": "Dismissal indicating user is agreeing to follow license guidance."
+              },
+              {
+                "value": "toolUpgrade",
+                "description": "Dismissal indicating backend detection tool was upgraded and the alert is not detected by the new version of tool."
+              },
+              {
+                "value": "notDistributed",
+                "description": "Dismissal indicating the affected dependencency is not distributed to end users."
               }
             ]
           }
         },
-        "count": {
-          "description": "The number of alerts of this type. Null when scanning is not configured for this alert type.",
-          "type": "integer",
-          "format": "int32"
+        "state": {
+          "description": "The state to transition the alert to. Only Active and Dismissed are supported.",
+          "enum": [
+            "unknown",
+            "active",
+            "dismissed",
+            "fixed",
+            "autoDismissed",
+            "draft"
+          ],
+          "x-ms-enum": {
+            "name": "State",
+            "values": [
+              {
+                "value": "unknown",
+                "description": "Alert is in an indeterminate state"
+              },
+              {
+                "value": "active",
+                "description": "Alert has been detected in the code"
+              },
+              {
+                "value": "dismissed",
+                "description": "Alert was dismissed by a user"
+              },
+              {
+                "value": "fixed",
+                "description": "The issue is no longer detected in the code"
+              },
+              {
+                "value": "autoDismissed",
+                "description": "The tool has determined that the issue is no longer a risk"
+              },
+              {
+                "value": "draft",
+                "description": "Alert is in a draft state and is only visible to identities in the Advanced Security draft-alert privileged identity list. Filtered out of all Get alert responses (results and counts) for non-privileged callers."
+              }
+            ]
+          }
         }
       }
     },
@@ -1798,7 +2303,8 @@
             "active",
             "dismissed",
             "fixed",
-            "autoDismissed"
+            "autoDismissed",
+            "draft"
           ],
           "x-ms-enum": {
             "name": "State",
@@ -1822,6 +2328,10 @@
               {
                 "value": "autoDismissed",
                 "description": "The tool has determined that the issue is no longer a risk"
+              },
+              {
+                "value": "draft",
+                "description": "Alert is in a draft state and is only visible to identities in the Advanced Security draft-alert privileged identity list. Filtered out of all Get alert responses (results and counts) for non-privileged callers."
               }
             ]
           }
@@ -1832,6 +2342,15 @@
       "description": "Payload sent by the autofix pipeline to report the outcome of a run.",
       "type": "object",
       "properties": {
+        "errorDetails": {
+          "description": "Optional diagnostic detail captured by the pipeline when the run fails — the tail of the pipeline run log (where the failing step's output is), bounded by the pipeline to fit the trace message size limit. Null or empty for successful runs or when no output was captured.",
+          "type": "string"
+        },
+        "pipelinePlanId": {
+          "description": "Orchestration plan id (System.PlanId) of the pipeline run reporting this callback.",
+          "type": "string",
+          "format": "uuid"
+        },
         "pullRequestId": {
           "type": "integer",
           "format": "int32"
@@ -1844,7 +2363,11 @@
           "description": "Terminal status reported by the pipeline.",
           "enum": [
             "done",
-            "failed"
+            "failed",
+            "noChangesProduced",
+            "falsePositive",
+            "targetFileNotFound",
+            "commitAuthorEmailValidationFailed"
           ],
           "x-ms-enum": {
             "name": "AutofixCallbackStatus",
@@ -1856,9 +2379,30 @@
               {
                 "value": "failed",
                 "description": "The pipeline or post-processing failed."
+              },
+              {
+                "value": "noChangesProduced",
+                "description": "The pipeline completed successfully but the autofix binary produced no changes, so no pull request was created."
+              },
+              {
+                "value": "falsePositive",
+                "description": "The pipeline completed successfully and determined that the alert is a false positive, so no pull request was created."
+              },
+              {
+                "value": "targetFileNotFound",
+                "description": "The target file referenced by the analysis could not be found."
+              },
+              {
+                "value": "commitAuthorEmailValidationFailed",
+                "description": "The push was rejected by the commit author email validation policy."
               }
             ]
           }
+        },
+        "tokenUsage": {
+          "description": "Total nanoAIU consumed by the autofix binary.",
+          "type": "integer",
+          "format": "int64"
         }
       }
     },
@@ -1869,6 +2413,78 @@
         "createdDate": {
           "type": "string",
           "format": "date-time"
+        },
+        "failedReason": {
+          "enum": [
+            "none",
+            "pipelineFailed",
+            "pipelineTimedOut",
+            "callbackNotReceived",
+            "processorJobFailed",
+            "noChanges",
+            "agentPoolUnavailable",
+            "branchNotResolvable",
+            "falsePositive",
+            "targetFileNotFound",
+            "commitAuthorEmailValidationFailed"
+          ],
+          "x-ms-enum": {
+            "name": "AutofixRequestFailedReason",
+            "values": [
+              {
+                "value": "none",
+                "description": "Default sentinel value; not a valid failure reason."
+              },
+              {
+                "value": "pipelineFailed",
+                "description": "The autofix pipeline run completed with a failure status."
+              },
+              {
+                "value": "pipelineTimedOut",
+                "description": "The autofix pipeline did not complete within the allowed time window."
+              },
+              {
+                "value": "callbackNotReceived",
+                "description": "The expected callback from the pipeline was never received."
+              },
+              {
+                "value": "processorJobFailed",
+                "description": "The processor job encountered an error."
+              },
+              {
+                "value": "noChanges",
+                "description": "The pipeline completed successfully but produced no changes, so no pull request was created. A valid terminal outcome surfaced as a failure with this distinct reason."
+              },
+              {
+                "value": "agentPoolUnavailable",
+                "description": "The target project's agent pool could not be found or has not been authorized for use, so the validation pipeline could not be queued. This is a user/configuration error."
+              },
+              {
+                "value": "branchNotResolvable",
+                "description": "The alert ref cannot be resolved to an existing branch because the pull request or merge ref, source branch, or normal branch no longer exists."
+              },
+              {
+                "value": "falsePositive",
+                "description": "The pipeline completed successfully and determined that the alert is a false positive, so no pull request was created. This is a terminal non-PR result, not an operational pipeline failure."
+              },
+              {
+                "value": "targetFileNotFound",
+                "description": "The target file referenced by the analysis could not be found."
+              },
+              {
+                "value": "commitAuthorEmailValidationFailed",
+                "description": "The push was rejected by the commit author email validation policy."
+              }
+            ]
+          }
+        },
+        "pipelinePlanId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "pullRequestId": {
+          "type": "integer",
+          "format": "int32"
         },
         "requestId": {
           "type": "integer",
@@ -2203,6 +2819,21 @@
         "uniqueName": {
           "description": "Deprecated - use Domain+PrincipalName instead",
           "type": "string"
+        }
+      }
+    },
+    "JObject": {
+      "description": "Represents a JSON object.",
+      "type": "object",
+      "properties": {
+        "item": {
+          "type": "string",
+          "format": "JToken"
+        },
+        "type": {
+          "description": "Gets the node type for this JToken.",
+          "type": "string",
+          "format": "JTokenType"
         }
       }
     },
@@ -2722,7 +3353,9 @@
             "completed",
             "failed",
             "requeued",
-            "concurrentProcessing"
+            "concurrentProcessing",
+            "consolidated",
+            "waitingConsolidation"
           ],
           "x-ms-enum": {
             "name": "SarifJobStatus",
@@ -2750,6 +3383,14 @@
               {
                 "value": "concurrentProcessing",
                 "description": "The job is currently being processed in the concurrent processing workflow exclusive for no autofix flows"
+              },
+              {
+                "value": "consolidated",
+                "description": "The original AI SARIF has been superseded by a consolidated SARIF (AI alert consolidation experiment). Terminal status: the original is never processed for alerts and is never re-consolidated."
+              },
+              {
+                "value": "waitingConsolidation",
+                "description": "An original AI SARIF awaiting consolidation (AI alert consolidation experiment). Excluded from normal alert processing; selected by the consolidation job, which moves it to Consolidated once it has launched the consolidation pipeline."
               }
             ]
           }
@@ -2789,7 +3430,9 @@
             "unknown",
             "dependency",
             "secret",
-            "code"
+            "code",
+            "aiCode",
+            "malware"
           ],
           "x-ms-enum": {
             "name": "AlertType",
@@ -2809,6 +3452,14 @@
               {
                 "value": "code",
                 "description": "The code contains a weakness determined by static analysis."
+              },
+              {
+                "value": "aiCode",
+                "description": "The code contains a weakness determined by AI-powered analysis."
+              },
+              {
+                "value": "malware",
+                "description": "The code uses a dependency flagged as malware by the GitHub Advisory Database."
               }
             ]
           }
@@ -2840,13 +3491,33 @@
           "description": "If provided, only alerts for this dependency are returned. <br />Otherwise, return alerts for all dependencies. <br />In a sarif submission, a dependency (or a component) is specified in result.RelatedLocations[].logicalLocation. <br />Not applicable for secret alerts.",
           "type": "string"
         },
+        "dependencyScope": {
+          "description": "If provided, only alerts for dependencies in this scope are returned. <br />Otherwise, return alerts regardless of scope. <br />Only applicable for dependency alerts.",
+          "enum": [
+            "runtime",
+            "development"
+          ],
+          "x-ms-enum": {
+            "name": "DependencyScope",
+            "values": [
+              {
+                "value": "runtime",
+                "description": ""
+              },
+              {
+                "value": "development",
+                "description": ""
+              }
+            ]
+          }
+        },
         "fromDate": {
           "description": "If provided, only return alerts last seen after this date. <br />Otherwise return all alerts.",
           "type": "string",
           "format": "date-time"
         },
         "hasLinkedWorkItems": {
-          "description": "If provided, filters alerts based on whether they have linked work items. <br />Set to \"true\" to return only alerts with linked work items. <br />Set to \"false\" to return only alerts without linked work items. <br />If not provided, returns all alerts regardless of linked work items. <br />Not applicable for secret and dependency scanning alerts.",
+          "description": "If provided, filters alerts based on whether they have linked work items. <br />Set to \"true\" to return only alerts with linked work items. <br />Set to \"false\" to return only alerts without linked work items. <br />If not provided, returns all alerts regardless of linked work items. <br />Not applicable for secret and dependency scanning alerts. <br />This property will be deprecated in the future; prefer filtering by metadata type instead.",
           "type": "boolean"
         },
         "isTriaged": {
@@ -2958,7 +3629,8 @@
               "active",
               "dismissed",
               "fixed",
-              "autoDismissed"
+              "autoDismissed",
+              "draft"
             ],
             "x-ms-enum": {
               "name": "State",
@@ -2982,6 +3654,10 @@
                 {
                   "value": "autoDismissed",
                   "description": "The tool has determined that the issue is no longer a risk"
+                },
+                {
+                  "value": "draft",
+                  "description": "Alert is in a draft state and is only visible to identities in the Advanced Security draft-alert privileged identity list. Filtered out of all Get alert responses (results and counts) for non-privileged callers."
                 }
               ]
             }
@@ -2995,6 +3671,13 @@
         "toolName": {
           "description": "If provided with toolName, only return alerts detected by this tool. <br />Otherwise, return alerts detected by all tools.",
           "type": "string"
+        },
+        "toolNames": {
+          "description": "If provided, only return alerts detected by these tools. <br />Takes precedence over ToolName when populated. <br />Requires the EnableMultiToolSelection feature flag.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         },
         "validity": {
           "description": "If provided, only return alerts with the validity specified here. If the validity status is Unknown, fetch alerts of all validity results. <br />Only applicable for secret alerts. <br />Filtering by validity status may cause less alerts to be returned than requested with TOP parameter. <br />Due to this behavior, the ContinuationToken(<![CDATA[<header name>]]>) in the response header should be relied on to decide if another batch needs to be fetched.",
@@ -3035,6 +3718,10 @@
       "description": "An Analysis tool that can generate security alerts",
       "type": "object",
       "properties": {
+        "isDeterministic": {
+          "description": "Whether the tool produces deterministic results. Used to group tools in the alerts filter UI.",
+          "type": "boolean"
+        },
         "name": {
           "description": "Name of the tool",
           "type": "string"
@@ -3187,7 +3874,8 @@
               "active",
               "dismissed",
               "fixed",
-              "autoDismissed"
+              "autoDismissed",
+              "draft"
             ],
             "x-ms-enum": {
               "name": "State",
@@ -3211,6 +3899,10 @@
                 {
                   "value": "autoDismissed",
                   "description": "The tool has determined that the issue is no longer a risk"
+                },
+                {
+                  "value": "draft",
+                  "description": "Alert is in a draft state and is only visible to identities in the Advanced Security draft-alert privileged identity list. Filtered out of all Get alert responses (results and counts) for non-privileged callers."
                 }
               ]
             }

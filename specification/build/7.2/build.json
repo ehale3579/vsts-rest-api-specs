@@ -8208,6 +8208,11 @@
             "$ref": "#/definitions/BuildOption"
           }
         },
+        "priority": {
+          "description": "Scheduling priority for this definition's runs. Null on update keeps the stored value.",
+          "type": "integer",
+          "format": "int16"
+        },
         "process": {
           "description": "The build process.",
           "$ref": "#/definitions/BuildProcess"
@@ -10898,6 +10903,50 @@
         }
       }
     },
+    "PipelineAnalyzerOutput": {
+      "description": "Lightweight output for pipeline analyzer AI analysis.",
+      "type": "object",
+      "properties": {
+        "category": {
+          "description": "Failure category (e.g., \"Infrastructure\", \"Code\", \"Configuration\").",
+          "type": "string"
+        },
+        "prevention": {
+          "description": "Prevention strategies suggested by AI.",
+          "type": "string"
+        },
+        "recommendedFix": {
+          "description": "Recommended fix provided by AI.",
+          "type": "string"
+        },
+        "rootCause": {
+          "description": "Root cause identified by AI.",
+          "type": "string"
+        }
+      }
+    },
+    "PipelineAnalyzerResponse": {
+      "description": "Response DTO returned by the Pipeline Analyzer endpoints. This is the Build-area (Pipelines) contract; the front-door controller forwards to TCM and returns this shape so the Build client does not take a compile-time dependency on TCM contracts.",
+      "type": "object",
+      "properties": {
+        "analysisResult": {
+          "description": "When the analysis has already completed for this build, contains the cached result so the caller does not need a separate GET request. Null when the job is newly queued or still in progress.",
+          "$ref": "#/definitions/PipelineAnalyzerOutput"
+        },
+        "authUrl": {
+          "description": "GitHub OAuth authorization URL. Present only when NeedsAuth is true.",
+          "type": "string"
+        },
+        "message": {
+          "description": "Human-readable status message (e.g. \"queued successfully\", \"already running\", or \"Analysis already completed\").",
+          "type": "string"
+        },
+        "needsAuth": {
+          "description": "True when the user needs to authorize the GitHub Copilot app before analysis can proceed. The client should open a popup to AuthUrl and retry after authorization completes.",
+          "type": "boolean"
+        }
+      }
+    },
     "PipelineGeneralSettings": {
       "description": "Contains pipeline general settings.",
       "type": "object",
@@ -10932,6 +10981,10 @@
         },
         "enableShellTasksArgsSanitizingAudit": {
           "description": "Enable shell tasks args sanitizing preview.",
+          "type": "boolean"
+        },
+        "enforceEvenStricterJobAuthScopeInRunRelatedApis": {
+          "description": "When enabled, the System.AccessToken will not be allowed to execute various cross-run operations.",
           "type": "boolean"
         },
         "enforceJobAuthScope": {
@@ -11024,15 +11077,7 @@
           "description": "Enable forked repositories to build pull requests.",
           "type": "boolean"
         },
-        "enforceJobAuthScopeForForks": {
-          "description": "Enforce job auth scope for builds of forked repositories.",
-          "type": "boolean"
-        },
-        "enforceNoAccessToSecretsFromForks": {
-          "description": "Enforce no access to secrets for builds of forked repositories.",
-          "type": "boolean"
-        },
-        "forkCommentOption": {
+        "commentOptionForks": {
           "description": "The comment trigger option for pull requests from forks.",
           "enum": [
             "none",
@@ -11062,15 +11107,7 @@
             ]
           }
         },
-        "forkIsCommentRequiredForPullRequest": {
-          "description": "Make comments required to have builds in pull requests from forks.",
-          "type": "boolean"
-        },
-        "forkProtectionEnabled": {
-          "description": "Enable settings that enforce certain levels of protection for building pull requests from forks globally.",
-          "type": "boolean"
-        },
-        "internalRepoCommentOption": {
+        "commentOptionInternalRepos": {
           "description": "The comment trigger option for repository-internal pull requests.",
           "enum": [
             "none",
@@ -11100,7 +11137,23 @@
             ]
           }
         },
-        "internalRepoIsCommentRequiredForPullRequest": {
+        "enforceJobAuthScopeForForks": {
+          "description": "Enforce job auth scope for builds of forked repositories.",
+          "type": "boolean"
+        },
+        "enforceNoAccessToSecretsFromForks": {
+          "description": "Enforce no access to secrets for builds of forked repositories.",
+          "type": "boolean"
+        },
+        "forkProtectionEnabled": {
+          "description": "Enable settings that enforce certain levels of protection for building pull requests from forks globally.",
+          "type": "boolean"
+        },
+        "isCommentRequiredForForkedPullRequests": {
+          "description": "Make comments required to have builds in pull requests from forks.",
+          "type": "boolean"
+        },
+        "isCommentRequiredForInternalRepoPRs": {
           "description": "Make comments required to have builds in repository-internal pull requests.",
           "type": "boolean"
         },
@@ -11265,7 +11318,7 @@
             "type": "string"
           }
         },
-        "forkCommentOption": {
+        "commentOptionForks": {
           "enum": [
             "none",
             "nonTeamMembersNonContributor",
@@ -11294,42 +11347,42 @@
             ]
           }
         },
-        "forkIsCommentRequiredForPullRequest": {
-          "type": "boolean"
+        "commentOptionInternalRepos": {
+          "enum": [
+            "none",
+            "nonTeamMembersNonContributor",
+            "nonTeamMembers",
+            "all"
+          ],
+          "x-ms-enum": {
+            "name": "CommentTriggerOption",
+            "values": [
+              {
+                "value": "none",
+                "description": ""
+              },
+              {
+                "value": "nonTeamMembersNonContributor",
+                "description": ""
+              },
+              {
+                "value": "nonTeamMembers",
+                "description": ""
+              },
+              {
+                "value": "all",
+                "description": ""
+              }
+            ]
+          }
         },
         "forks": {
           "$ref": "#/definitions/Forks"
         },
-        "internalRepoCommentOption": {
-          "enum": [
-            "none",
-            "nonTeamMembersNonContributor",
-            "nonTeamMembers",
-            "all"
-          ],
-          "x-ms-enum": {
-            "name": "CommentTriggerOption",
-            "values": [
-              {
-                "value": "none",
-                "description": ""
-              },
-              {
-                "value": "nonTeamMembersNonContributor",
-                "description": ""
-              },
-              {
-                "value": "nonTeamMembers",
-                "description": ""
-              },
-              {
-                "value": "all",
-                "description": ""
-              }
-            ]
-          }
+        "isCommentRequiredForForkedPullRequests": {
+          "type": "boolean"
         },
-        "internalRepoIsCommentRequiredForPullRequest": {
+        "isCommentRequiredForInternalRepoPRs": {
           "type": "boolean"
         },
         "isCommentRequiredForPullRequest": {
@@ -11353,6 +11406,10 @@
         "settingsSourceType": {
           "type": "integer",
           "format": "int32"
+        },
+        "suppressPipelineStatusComments": {
+          "description": "When set to true, suppresses automatic pipeline status comments on pull requests for this definition.",
+          "type": "boolean"
         }
       }
     },
@@ -12478,6 +12535,10 @@
           "description": "Gets or sets the record identifier located within the specified timeline.",
           "type": "string",
           "format": "uuid"
+        },
+        "requestedBy": {
+          "description": "Gets or sets the identity that requested this attempt. For the initial attempt this is typically the build orchestration service identity; for re-run attempts this is the user that initiated the retry.",
+          "$ref": "#/definitions/IdentityRef"
         },
         "timelineId": {
           "description": "Gets or sets the timeline identifier which owns the record representing this attempt.",

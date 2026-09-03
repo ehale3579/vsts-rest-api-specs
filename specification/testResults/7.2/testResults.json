@@ -849,7 +849,7 @@
         "x-ms-vss-resource": "resultdetailsbybuild",
         "x-ms-vss-method": "GetTestResultDetailsForBuild",
         "x-ms-preview": true,
-        "description": "",
+        "description": "Get a summary of test results for a build. To fetch the full TestCaseResult, call Results - Get.",
         "operationId": "Resultdetailsbybuild_Get",
         "produces": [
           "application/json"
@@ -8396,6 +8396,25 @@
         }
       }
     },
+    "BlobStoreTestAttachment": {
+      "description": "A TestAttachment enriched with the dedup storage coordinates needed to download the content directly from BlobStore. Returned only by the internal BlobStore attachment-metadata query; the coordinates live on this derived type so the base TestAttachment contract is unchanged.",
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/definitions/TestAttachment"
+        }
+      ],
+      "properties": {
+        "dedupId": {
+          "description": "VsoHash dedup id (BlobIdentifier.ValueString) of the stored content.",
+          "type": "string"
+        },
+        "domainId": {
+          "description": "Dedup domain (ShardSet / ContainerSet) id the content was published to.",
+          "type": "string"
+        }
+      }
+    },
     "BranchInfo": {
       "description": "Branch information",
       "type": "object",
@@ -9485,9 +9504,21 @@
       "description": "Lightweight output for pipeline debugger AI analysis.",
       "type": "object",
       "properties": {
+        "agencyContext": {
+          "description": "Self-contained implementation brief for a coding agent (targets, boundaries, constraints, validation, risks). Present only when a code-fix classification is true; used verbatim as the Agency prompt.",
+          "type": "string"
+        },
         "category": {
           "description": "Failure category (e.g., \"Infrastructure\", \"Code\", \"Configuration\").",
           "type": "string"
+        },
+        "developerChangeFixRequired": {
+          "description": "True when the developer's PR change introduced the defect and must be corrected. Always emitted; mutually exclusive with IndependentRepositoryFixRequired.",
+          "type": "boolean"
+        },
+        "independentRepositoryFixRequired": {
+          "description": "True when the repository needs a code/pipeline/config change regardless of the developer's PR (incl. a defect already on main). Always emitted; mutually exclusive with DeveloperChangeFixRequired.",
+          "type": "boolean"
         },
         "prevention": {
           "description": "Prevention strategies suggested by AI.",
@@ -9503,6 +9534,38 @@
         }
       }
     },
+    "PipelineDebuggerPullRequestStatusResponse": {
+      "description": "Response DTO exposing the safe, client-consumable subset of the Agency remediation state — never tokens, raw responses, or internal failure detail. Returned by create-PR and embedded in the analysis result.",
+      "type": "object",
+      "properties": {
+        "agencyJobId": {
+          "description": "The Agency job id tracking this remediation request.",
+          "type": "string"
+        },
+        "buildId": {
+          "description": "The build the remediation PR was requested for.",
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "description": "Human-readable status message.",
+          "type": "string"
+        },
+        "pullRequestId": {
+          "description": "The created pull request id, when available.",
+          "type": "integer",
+          "format": "int32"
+        },
+        "pullRequestState": {
+          "description": "PR request state: NotRequested, Submitting, Queued, Running, Completed, Failed, Cancelled.",
+          "type": "string"
+        },
+        "pullRequestUrl": {
+          "description": "The created pull request web URL, when available.",
+          "type": "string"
+        }
+      }
+    },
     "PipelineDebuggerResponse": {
       "description": "Response DTO returned by the pipeline debugger POST endpoint.",
       "type": "object",
@@ -9511,9 +9574,21 @@
           "description": "When the analysis has already completed for this build, contains the cached result so the caller does not need a separate GET request. Null when the job is newly queued or still in progress.",
           "$ref": "#/definitions/PipelineDebuggerAnalysisOutput"
         },
+        "authUrl": {
+          "description": "GitHub OAuth authorization URL. Present only when NeedsAuth is true.",
+          "type": "string"
+        },
         "message": {
           "description": "Human-readable status message (e.g. \"queued successfully\", \"already running\", or \"Analysis already completed\").",
           "type": "string"
+        },
+        "needsAuth": {
+          "description": "True when the user needs to authorize the GitHub Copilot app before analysis can proceed. The client should open a popup to AuthUrl and retry after authorization completes.",
+          "type": "boolean"
+        },
+        "pullRequest": {
+          "description": "Current Agency remediation PR state for this build. Refreshed while fetching the analysis result (no separate status call). Null when no PR has been requested.",
+          "$ref": "#/definitions/PipelineDebuggerPullRequestStatusResponse"
         }
       }
     },
@@ -10636,6 +10711,13 @@
       "description": "",
       "type": "object",
       "properties": {
+        "buildId": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "resultPayload": {
+          "type": "string"
+        },
         "success": {
           "type": "boolean"
         },
@@ -10652,6 +10734,22 @@
       "description": "",
       "type": "object",
       "properties": {
+        "branchName": {
+          "type": "string"
+        },
+        "configJsonPath": {
+          "type": "string"
+        },
+        "pullRequestId": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "repoName": {
+          "type": "string"
+        },
+        "scriptFolderName": {
+          "type": "string"
+        },
         "task": {
           "type": "string"
         },
@@ -10753,6 +10851,37 @@
         }
       }
     },
+    "TestAttachmentMetadataRequestModel": {
+      "description": "Request model used by the pipeline agent to register a test attachment whose content has already been uploaded by the caller. Unlike TestAttachmentRequestModel this model carries no file bytes -- only the metadata required to persist a <c>tbl_LogStoreAttachmentMapper</c> row.",
+      "type": "object",
+      "properties": {
+        "attachmentType": {
+          "description": "Attachment type. Defaults to GeneralAttachment.",
+          "type": "string"
+        },
+        "comment": {
+          "description": "Comment associated with the attachment.",
+          "type": "string"
+        },
+        "dedupId": {
+          "description": "VsoHash BlobIdentifier value (<c>BlobIdentifier.ValueString</c>) of the content already published to BlobStore dedup storage by the agent. Required -- the server rejects the request when it is null or empty.",
+          "type": "string"
+        },
+        "domainId": {
+          "description": "Optional id of the BlobStore dedup domain (ShardSet / ContainerSet) the content was published to. Reserved for the read path to resolve the correct dedup domain; not persisted yet, so it may be omitted.",
+          "type": "string"
+        },
+        "fileName": {
+          "description": "Attachment filename.",
+          "type": "string"
+        },
+        "length": {
+          "description": "Size in bytes of the stored content, as reported by the BlobStore publish result.",
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
     "TestAttachmentReference": {
       "description": "Reference to test attachment.",
       "type": "object",
@@ -10790,6 +10919,25 @@
         }
       }
     },
+    "TestAttachmentUploadDetails": {
+      "description": "Response of the pre-flight endpoint the agent calls before publishing an attachment directly to BlobStore dedup storage: it confirms the caller is authorized and returns where to publish.",
+      "type": "object",
+      "properties": {
+        "domainId": {
+          "description": "Dedup domain (ShardSet) id to publish the content to. Populated only when enabled.",
+          "type": "string"
+        },
+        "isBlobStoreUploadEnabled": {
+          "description": "Whether direct-to-BlobStore upload is enabled for this run; if false, use the classic (SAS) path.",
+          "type": "boolean"
+        },
+        "testRunId": {
+          "description": "The test run these details apply to.",
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
     "TestCaseFlakinessBranchInfo": {
       "description": "Represents a Test Case Flakiness Branch Information.",
       "type": "object",
@@ -10822,6 +10970,65 @@
         "testCaseTitle": {
           "description": "TestCaseTitle of test result.",
           "type": "string"
+        }
+      }
+    },
+    "TestCaseLatestResult": {
+      "description": "The latest execution result for a single TestCaseId, returned by the batch \"latest result per test case\" API (POST testresults/results/latestresults). One instance is returned per requested TestCaseId that has at least one result in a non-deleted run; test cases that were never executed are omitted from the response.",
+      "type": "object",
+      "properties": {
+        "configurationId": {
+          "description": "Configuration that ran most recently for this test case.",
+          "type": "integer",
+          "format": "int32"
+        },
+        "dateCompleted": {
+          "description": "When the result completed. Null for in-progress results.",
+          "type": "string",
+          "format": "date-time"
+        },
+        "dateStarted": {
+          "description": "When the result started. May be null.",
+          "type": "string",
+          "format": "date-time"
+        },
+        "outcome": {
+          "description": "The factual last execution outcome (e.g. \"Passed\", \"Failed\", \"NotExecuted\", \"Blocked\"). This is the stored result outcome and is not subject to ResetToActive suppression.",
+          "type": "string"
+        },
+        "resultId": {
+          "description": "Id of the latest result within the run.",
+          "type": "integer",
+          "format": "int32"
+        },
+        "runId": {
+          "description": "Id of the run that contains the latest result.",
+          "type": "integer",
+          "format": "int32"
+        },
+        "testCaseId": {
+          "description": "The requested TestCaseId (work item id) this result belongs to.",
+          "type": "integer",
+          "format": "int32"
+        },
+        "testPointId": {
+          "description": "Test point via which the latest result ran.",
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
+    "TestCaseLatestResultsQuery": {
+      "description": "Request body for the batch \"latest result per test case\" API (POST testresults/results/latestresults). Carries the set of TestCaseIds (work item ids) for which the most recent execution outcome is required.",
+      "type": "object",
+      "properties": {
+        "testCaseIds": {
+          "description": "The TestCaseIds (work item ids) to fetch the latest result for. Must contain at least one id and at most the server-configured batch ceiling; requests outside this range are rejected with HTTP 400.",
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int32"
+          }
         }
       }
     },

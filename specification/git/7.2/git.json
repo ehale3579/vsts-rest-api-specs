@@ -3877,7 +3877,7 @@
         "x-ms-vss-resource": "pullRequests",
         "x-ms-vss-method": "UpdatePullRequest",
         "x-ms-preview": true,
-        "description": "Update a pull request\n\nThese are the properties that can be updated with the API:\n - Status\n - Title\n - Description (up to 4000 characters)\n - CompletionOptions\n - MergeOptions\n - AutoCompleteSetBy.Id\n - TargetRefName (when the PR retargeting feature is enabled)\n Attempting to update other properties outside of this list will either cause the server to throw an `InvalidArgumentValueException`,\n or to silently ignore the update.",
+        "description": "Update a pull request\n\nThese are the properties that can be updated with the API:\n - Status\n - Title\n - Description (up to 100,000 characters)\n - CompletionOptions\n - MergeOptions\n - AutoCompleteSetBy.Id\n - TargetRefName (when the PR retargeting feature is enabled)\n Attempting to update other properties outside of this list will either cause the server to throw an `InvalidArgumentValueException`,\n or to silently ignore the update.",
         "operationId": "Pull Requests_Update",
         "consumes": [
           "application/json"
@@ -9320,7 +9320,7 @@
           {
             "in": "body",
             "name": "body",
-            "description": "Parents commitIds and merge commit messsage.",
+            "description": "Parents commitIds and merge commit message.",
             "required": true,
             "schema": {
               "$ref": "#/definitions/GitMergeParameters"
@@ -11180,7 +11180,7 @@
           "type": "string"
         },
         "pipelineServiceConnectionId": {
-          "description": "Optional. The ID of a GitHub Enterprise service connection to use for pipeline rewiring. May be supplied at create time or attached later via PUT /pipelines. When EnableAutoDiscoverPipelines is opted in but no connection is attached, auto-discovery and clone-definition creation no-op during sync, and cutover is blocked by the cutover-readiness check until a connection is attached.",
+          "description": "Optional. The ID of a GitHub Enterprise service connection to use for pipeline rewiring. May be supplied at create time or attached later via PUT /pipelines. Required at create time when EnableAutoDiscoverPipelines is opted in: a create request that enables auto-discovery without a pipeline service connection is rejected with HTTP 400.",
           "type": "string",
           "format": "uuid"
         },
@@ -11188,11 +11188,6 @@
           "description": "The UTC date/time representing when the cutover is to occur.",
           "type": "string",
           "format": "date-time"
-        },
-        "serviceEndpointId": {
-          "description": "Optional. ID of a GitHub Enterprise Server-typed service connection whose PAT has ELM API access on the target GHES instance.",
-          "type": "string",
-          "format": "uuid"
         },
         "skipValidation": {
           "description": "Optional. The set of pre-migration validation policies to skip.",
@@ -11462,6 +11457,103 @@
       "description": "Provides properties that describe detailed file differences including line content",
       "type": "object",
       "properties": {
+        "changeType": {
+          "description": "The type of change (add, delete, rename, edit, etc.)",
+          "enum": [
+            "none",
+            "add",
+            "edit",
+            "encoding",
+            "rename",
+            "delete",
+            "undelete",
+            "branch",
+            "merge",
+            "lock",
+            "rollback",
+            "sourceRename",
+            "targetRename",
+            "property",
+            "all"
+          ],
+          "x-ms-enum": {
+            "name": "VersionControlChangeType",
+            "values": [
+              {
+                "value": "none",
+                "description": ""
+              },
+              {
+                "value": "add",
+                "description": ""
+              },
+              {
+                "value": "edit",
+                "description": ""
+              },
+              {
+                "value": "encoding",
+                "description": ""
+              },
+              {
+                "value": "rename",
+                "description": ""
+              },
+              {
+                "value": "delete",
+                "description": ""
+              },
+              {
+                "value": "undelete",
+                "description": ""
+              },
+              {
+                "value": "branch",
+                "description": ""
+              },
+              {
+                "value": "merge",
+                "description": ""
+              },
+              {
+                "value": "lock",
+                "description": ""
+              },
+              {
+                "value": "rollback",
+                "description": ""
+              },
+              {
+                "value": "sourceRename",
+                "description": ""
+              },
+              {
+                "value": "targetRename",
+                "description": ""
+              },
+              {
+                "value": "property",
+                "description": ""
+              },
+              {
+                "value": "all",
+                "description": ""
+              }
+            ]
+          }
+        },
+        "isFolder": {
+          "description": "Whether the item is a folder.",
+          "type": "boolean"
+        },
+        "isLinuxExecutable": {
+          "description": "Whether the item has the Linux executable bit set.",
+          "type": "boolean"
+        },
+        "isSymbolicLink": {
+          "description": "Whether the item is a symbolic link.",
+          "type": "boolean"
+        },
         "lineDiffBlocks": {
           "description": "The collection of detailed line diff blocks",
           "type": "array",
@@ -13559,7 +13651,8 @@
             "none",
             "unknown",
             "caseSensitive",
-            "objectTooLarge"
+            "objectTooLarge",
+            "stackedPullRequestInvalid"
           ],
           "x-ms-enum": {
             "name": "PullRequestMergeFailureType",
@@ -13579,6 +13672,10 @@
               {
                 "value": "objectTooLarge",
                 "description": "Pull request merge failed due to an object being too large."
+              },
+              {
+                "value": "stackedPullRequestInvalid",
+                "description": "Pull request merge was rejected because its stacked pull request relationship is invalid."
               }
             ]
           }
@@ -14251,6 +14348,144 @@
         },
         "title": {
           "description": "If set, filters pull requests that contain the specified text in the title.",
+          "type": "string"
+        }
+      }
+    },
+    "GitPullRequestStack": {
+      "description": "A stack of related pull requests. Pull requests are stacked when one targets the source branch of another (linked via BasePullRequestId). The entries are ordered from the root of the stack (targets the mainline directly) to the tip.",
+      "type": "object",
+      "properties": {
+        "entries": {
+          "description": "The entries in the stack, ordered from the root (StackOrder = 1) to the tip.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/GitPullRequestStackEntry"
+          }
+        },
+        "name": {
+          "description": "Optional display name of the stack. May be null.",
+          "type": "string"
+        },
+        "stackId": {
+          "description": "The unique identifier of the stack within the repository.",
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
+    "GitPullRequestStackEntry": {
+      "description": "A single pull request within a GitPullRequestStack, with the minimal set of fields needed to render the stack without fetching each pull request individually.",
+      "type": "object",
+      "properties": {
+        "basePullRequestId": {
+          "description": "The ID of the pull request one position closer to the root in the stack, whose source branch this pull request targets. Null for the root entry.",
+          "type": "integer",
+          "format": "int32"
+        },
+        "hasAutoComplete": {
+          "description": "Whether auto-complete is currently set on the pull request.",
+          "type": "boolean"
+        },
+        "isDraft": {
+          "description": "Whether the pull request is a draft.",
+          "type": "boolean"
+        },
+        "mergeStatus": {
+          "description": "The current merge status of the pull request. Used to surface merge conflicts on the entry.",
+          "enum": [
+            "notSet",
+            "queued",
+            "conflicts",
+            "succeeded",
+            "rejectedByPolicy",
+            "failure"
+          ],
+          "x-ms-enum": {
+            "name": "PullRequestAsyncStatus",
+            "values": [
+              {
+                "value": "notSet",
+                "description": "Status is not set. Default state."
+              },
+              {
+                "value": "queued",
+                "description": "Pull request merge is queued."
+              },
+              {
+                "value": "conflicts",
+                "description": "Pull request merge failed due to conflicts."
+              },
+              {
+                "value": "succeeded",
+                "description": "Pull request merge succeeded."
+              },
+              {
+                "value": "rejectedByPolicy",
+                "description": "Pull request merge rejected by policy."
+              },
+              {
+                "value": "failure",
+                "description": "Pull request merge failed."
+              }
+            ]
+          }
+        },
+        "pullRequestId": {
+          "description": "The ID of the pull request represented by this entry.",
+          "type": "integer",
+          "format": "int32"
+        },
+        "sourceRefName": {
+          "description": "The full source branch ref name of the pull request (e.g. refs/heads/feature).",
+          "type": "string"
+        },
+        "stackOrder": {
+          "description": "1-based position in the stack. The entry with StackOrder = 1 is the root of the stack and targets the mainline branch directly.",
+          "type": "integer",
+          "format": "int32"
+        },
+        "status": {
+          "description": "The status of the pull request (active, abandoned, completed).",
+          "enum": [
+            "notSet",
+            "active",
+            "abandoned",
+            "completed",
+            "all"
+          ],
+          "x-ms-enum": {
+            "name": "PullRequestStatus",
+            "values": [
+              {
+                "value": "notSet",
+                "description": "Status not set. Default state."
+              },
+              {
+                "value": "active",
+                "description": "Pull request is active."
+              },
+              {
+                "value": "abandoned",
+                "description": "Pull request is abandoned."
+              },
+              {
+                "value": "completed",
+                "description": "Pull request is completed."
+              },
+              {
+                "value": "all",
+                "description": "Used in pull request search criteria to include all statuses."
+              }
+            ]
+          }
+        },
+        "targetRefName": {
+          "description": "The full target branch ref name of the pull request (e.g. refs/heads/main).",
+          "type": "string"
+        },
+        "title": {
+          "description": "The pull request title.",
           "type": "string"
         }
       }
@@ -15930,7 +16165,7 @@
           "type": "string"
         },
         "vote": {
-          "description": "Vote on a pull request:<br /> 10 - approved 5 - approved with suggestions 0 - no vote -5 - waiting for author -10 - rejected",
+          "description": "Vote on a pull request:<br /> 10 - approved 5 - approved with suggestions 0 - no vote -5 - waiting for author -10 - rejected 15 - bypassed / not applicable; satisfies required reviewer requirements without counting as a generic approval",
           "type": "integer",
           "format": "int16"
         },
@@ -16359,11 +16594,6 @@
           "description": "The UTC date/time representing when the cutover is to occur.",
           "type": "string",
           "format": "date-time"
-        },
-        "serviceEndpointId": {
-          "description": "The ID of the GitHub Enterprise Server service connection that holds the PAT used to authenticate against the target GitHub Enterprise Server.",
-          "type": "string",
-          "format": "uuid"
         },
         "skipValidation": {
           "description": "The pre-migration validation policies that are being skipped.",
@@ -17088,7 +17318,7 @@
           }
         },
         "serviceConnectionId": {
-          "description": "The ID of the GitHub service connection to use for the rewired pipelines. This must be a project-scoped service connection with access to the target GitHub org. This is separate from the migration-level ServiceEndpointId.",
+          "description": "The ID of the GitHub service connection to use for the rewired pipelines. This must be a project-scoped service connection with access to the target GitHub org.",
           "type": "string",
           "format": "uuid"
         }

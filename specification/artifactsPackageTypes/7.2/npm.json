@@ -1912,6 +1912,11 @@
           "description": "The display name of the package.",
           "type": "string"
         },
+        "originalPublishDate": {
+          "description": "The original publish date of the package, as reported by the upstream source (when applicable).",
+          "type": "string",
+          "format": "date-time"
+        },
         "permanentlyDeletedDate": {
           "description": "If and when the package was permanently deleted.",
           "type": "string",

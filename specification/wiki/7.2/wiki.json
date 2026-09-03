@@ -2779,6 +2779,25 @@
         }
       }
     },
+    "WikiPageRef": {
+      "description": "A lightweight reference to a wiki page (or a folder node derived from page paths) used by the SQL-backed page-paths listing that powers filter-by-title and page-move scenarios.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Permanent page id, or <c>null</c> for a folder-only node derived from page paths (a folder that has no backing .md page of its own).",
+          "type": "integer",
+          "format": "int32"
+        },
+        "isParentPage": {
+          "description": "True when this entry has descendants (i.e. it is an ancestor of at least one page).",
+          "type": "boolean"
+        },
+        "path": {
+          "description": "Readable path of the page or folder, relative to the wiki root.",
+          "type": "string"
+        }
+      }
+    },
     "WikiPageResponse": {
       "description": "Response contract for the Wiki Pages PUT, PATCH and DELETE APIs.",
       "type": "object",

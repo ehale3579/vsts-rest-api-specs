@@ -7947,6 +7947,35 @@
         }
       }
     },
+    "AttachmentsBundleRequest": {
+      "description": "Describes a request to download a set of a work item's attachments as a single bundle.",
+      "type": "object",
+      "properties": {
+        "attachmentIds": {
+          "description": "The ids of the attachments to include in the bundle. Each must reference an attachment on the target work item's Attachments tab. The maximum number allowed per request is enforced by the server.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "format": {
+          "description": "The format of the bundle.",
+          "enum": [
+            "zip"
+          ],
+          "x-ms-enum": {
+            "name": "BundleFormat",
+            "values": [
+              {
+                "value": "zip",
+                "description": "A ZIP archive (application/zip). This is the default when no format is specified."
+              }
+            ]
+          }
+        }
+      }
+    },
     "Comment": {
       "description": "Comment on a Work Item.",
       "type": "object",
@@ -8463,6 +8492,30 @@
         }
       }
     },
+    "GitHubConnectionCredentialUpdateRequest": {
+      "description": "Request model for replacing the personal access token of an existing GitHub connection, so that a rotated token does not require deleting and recreating the connection.",
+      "type": "object",
+      "properties": {
+        "accessToken": {
+          "description": "The replacement personal access token. It must belong to the same GitHub account the connection was created with.",
+          "type": "string"
+        }
+      }
+    },
+    "GitHubConnectionCredentialUpdateResponse": {
+      "description": "Result of replacing the credentials of an existing GitHub connection.",
+      "type": "object",
+      "properties": {
+        "connection": {
+          "description": "The connection after its credentials were replaced.",
+          "$ref": "#/definitions/GitHubConnectionModel"
+        },
+        "warningMessage": {
+          "description": "Set when the token was replaced but something about the rotation is worth telling the user, such as the connection's status not being refreshed afterwards. Null when there is nothing to report. The rotation succeeded either way.",
+          "type": "string"
+        }
+      }
+    },
     "GitHubConnectionModel": {
       "description": "Describes Github connection.",
       "type": "object",
@@ -8514,6 +8567,10 @@
           "items": {
             "$ref": "#/definitions/GitHubConnectionRepoModel"
           }
+        },
+        "gitHubUserToken": {
+          "description": "Optional GitHub access token used to authenticate provisioning for the add and remove operations. Add also requires admin access to the repos.",
+          "type": "string"
         },
         "operationType": {
           "description": "Operation type (f. e. add, remove)",
@@ -10885,11 +10942,11 @@
       "authorizationUrl": "https://app.vssps.visualstudio.com/oauth2/authorize&response_type=Assertion",
       "tokenUrl": "https://app.vssps.visualstudio.com/oauth2/token?client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer&grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer",
       "scopes": {
-        "vso.githubconnections_manage": "Grants the ability to read and manage github connections and github repositories data",
-        "vso.githubconnections": "Grants the ability to read github connections and github repositories data",
         "vso.work": "Grants the ability to read work items, queries, boards, area and iterations paths, and other work item tracking related metadata. Also grants the ability to execute queries, search work items and to receive notifications about work item events via service hooks.",
+        "vso.work_full": "Grants full access to work items, queries, backlogs, plans, and work item tracking metadata. Also provides the ability to receive notifications about work item events via service hooks.",
         "vso.work_write": "Grants the ability to read, create, and update work items and queries, update board metadata, read area and iterations paths other work item tracking related metadata, execute queries, and to receive notifications about work item events via service hooks.",
-        "vso.work_full": "Grants full access to work items, queries, backlogs, plans, and work item tracking metadata. Also provides the ability to receive notifications about work item events via service hooks."
+        "vso.githubconnections_manage": "Grants the ability to read and manage github connections and github repositories data",
+        "vso.githubconnections": "Grants the ability to read github connections and github repositories data"
       }
     }
   },

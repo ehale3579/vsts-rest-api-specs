@@ -1,0 +1,37 @@
+{
+  "x-ms-vss-request-method": "PUT",
+  "x-ms-vss-request-url": "https://auditservice.dev.azure.com/fabrikam/_apis/audit/streams",
+  "parameters": {
+    "body": {
+      "id": 15,
+      "consumerInputs": {
+        "WorkspaceResourceId": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/monitoring/providers/Microsoft.OperationalInsights/workspaces/audit-logs",
+        "Token": "<Azure Resource Manager access token>"
+      },
+      "consumerType": "AzureMonitorLogs",
+      "status": 1
+    }
+  },
+  "responses": {
+    "200": {
+      "headers": {},
+      "body": {
+        "id": 15,
+        "consumerType": "AzureMonitorLogs",
+        "displayName": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/monitoring/providers/Microsoft.OperationalInsights/workspaces/audit-logs",
+        "consumerInputs": {
+          "WorkspaceId": "22222222-2222-2222-2222-222222222222",
+          "WorkspaceResourceId": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/monitoring/providers/Microsoft.OperationalInsights/workspaces/audit-logs"
+        },
+        "status": 1,
+        "statusReason": null,
+        "updatedTime": "2026-08-20T16:00:00Z"
+      }
+    }
+  },
+  "x-ms-vss-generated": true,
+  "x-ms-vss-generated-date": "2026-08-20T16:00:00Z",
+  "x-ms-vss-format": 1,
+  "x-ms-vss-area": "audit",
+  "x-ms-vss-resource": "streams"
+}
